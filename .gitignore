@@ -1,0 +1,13 @@
+/*
+!/.gitignore
+!/.nojekyll
+!/index.html
+!/check.mjs
+!/README.md
+!/fonts/
+/fonts/*
+!/fonts/PretendardVariable.woff2
+!/fonts/PretendardJPVariable.woff2
+!/fonts/LICENSE-Pretendard.txt
+!/fonts/LICENSE-PretendardJP.txt
+!/fonts/README.md
