@@ -169,7 +169,7 @@ option{background:#252524;color:var(--cream)}
 .chat-meta strong{color:var(--cream);font:500 12px var(--ui)}
 .chat-text{display:inline-block;margin:0;padding:11px 14px;background:#30302c;border:1px solid #44443d;color:var(--cream);font-size:14px;line-height:1.55;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}.chat-message.mine .chat-text{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
 .chat-form{display:grid;grid-template-columns:190px minmax(260px,1fr) auto;gap:10px;padding:16px;background:#232321;border-top:1px solid #41413b}.chat-form label{display:flex;flex-direction:column;gap:6px;color:var(--dim-dark);font-size:10px}.chat-form input,.chat-form textarea{width:100%;min-width:0;height:48px;padding:12px;border:1px solid #55554d;background:#171716;color:var(--cream);font:14px var(--ui);resize:none}.chat-form button{align-self:end;height:48px;min-width:92px}.chat-form input:focus,.chat-form textarea:focus{outline:2px solid var(--yellow);outline-offset:1px}
-#chatStatus{min-height:18px;margin:10px 0 0;color:var(--peach);font-size:11px}.memo-help{margin:14px 0 0;color:var(--dim-dark);font-size:11px}.memo-help a{color:var(--cream)}
+#chatStatus{min-height:18px;margin:10px 0 0;color:var(--peach);font-size:11px}
 
 /* Each slot keeps its place while editing; the catalog fills the selected slot. */
 .home-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;align-items:start}
@@ -398,7 +398,7 @@ option{background:#252524;color:var(--cream)}
       <p id="message" role="status"></p>
     </section>
 
-    <!-- ── 공용 채팅 · 닉네임은 이 브라우저에만 저장한다 ─────────── -->
+    <!-- ── 공용 채팅 ──────────────────────────────────────────── -->
     <section class="panel" id="scr-memo" hidden>
       <div class="panel-head">
         <h1 class="scr-title">공용 채팅</h1>
@@ -414,7 +414,6 @@ option{background:#252524;color:var(--cream)}
         </form>
       </div>
       <p id="chatStatus" role="status"></p>
-      <p class="memo-help">닉네임은 이 브라우저에만 저장됩니다. 이전 메모는 <a href="https://github.com/51win/guitar-practice/discussions/1" target="_blank" rel="noopener">GitHub Discussion</a>에서 볼 수 있습니다.</p>
     </section>
 
     <section class="drawer" id="drawer" hidden>
