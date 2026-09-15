@@ -458,7 +458,7 @@ option{background:#252524;color:var(--cream)}
     <div class="dialog-actions"><button class="pill" id="deleteBar" type="button">마디 삭제</button><button class="pill" id="cancelBar" type="button">취소</button><button class="pill is-primary" type="submit">적용</button></div>
   </form>
 </dialog>
-<script src="repertoire.js?v=20260916b"></script>
+<script src="repertoire.js?v=20260916c"></script>
 <script>
 
 'use strict';
@@ -501,7 +501,7 @@ SONGS.silhouette=SILHOUETTE.bars;KEYS.silhouette='Bm';
 SONGS['samurai-heart']=SAMURAI_HEART.bars;KEYS['samurai-heart']='Cm';
 const SCORES={silhouette:{...SILHOUETTE,title:'Silhouette',bpm:183,penta:'minor',backing:true},'samurai-heart':{...SAMURAI_HEART,title:'Samurai Heart',bpm:113,penta:'minor',backing:false}};
 SOURCES.silhouette=['사용자 제공 · Grab the Guitar 고화질 악보 6장','https://www.grabtheguitar.com/','KANA-BOON · Silhouette · 183 BPM · 178마디. 고화질 PDF로 줄·프렛과 음 길이를 다시 대조했습니다. 펜타토닉의 악보 따라가기에서 원래 운지를 표시하며, 스케일 밖의 음도 그대로 연주합니다.'];
-SOURCES['samurai-heart']=['사용자 제공 · 기타 TAB 3장','https://www.spyair.net/','SPYAIR · Samurai Heart (Some Like It Hot!!) · 113 BPM · 61마디. PDF의 탭 숫자를 6개 줄별로 다시 대조했으며 뮤트 스트로크는 쉼표로 표시합니다. 코드 반주는 기본으로 꺼집니다.'];
+SOURCES['samurai-heart']=['사용자 제공 · Guitar Pro PDF 5장','https://www.spyair.net/','SPYAIR · Samurai Heart (Some Like It Hot!!) · 113 BPM · 90마디. 새 Guitar Pro 악보의 6개 TAB 줄, 쉼표, 반복 구간을 기준으로 다시 구성했습니다. 코드 반주는 기본으로 꺼집니다.'];
 $('song').add(new Option('Silhouette · KANA-BOON','silhouette'));
 $('song').add(new Option('Samurai Heart (Some Like It Hot!!) · SPYAIR','samurai-heart'));
 function keyOf(id){const s=KEYS[id]||'C';return{root:Math.max(0,NAMES.indexOf(s.replace(/m$/,''))),minor:/m$/.test(s)};}

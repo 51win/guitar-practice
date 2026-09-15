@@ -268,17 +268,18 @@ assert.deepEqual(score.score[0].map(e=>e.notes[0].s),[3,3,3,2,3,3,3,3]);
 assert.equal(score.score[116][0].notes.length,0,'117마디 전체 쉼표');
 assert.equal(score.score[166].at(-1).duration,.25,'167마디 마지막 슬라이드');
 assert.equal(score.score[171][0].tie,true,'172마디는 171마디에서 붙임줄');
-assert.equal(samurai.bars.length,61);assert.equal(samurai.score.length,61);
-for(let i=0;i<61;i++){
+assert.equal(samurai.bars.length,90);assert.equal(samurai.score.length,90);
+for(let i=0;i<90;i++){
  assert.ok(samurai.bars[i],`Missing Samurai Heart chord bar ${i+1}`);
  const events=samurai.score[i];assert.ok(events?.length,`Missing Samurai Heart score bar ${i+1}`);
  let time=0;for(const e of events){assert.equal(e.at,time,`Samurai Heart gap/overlap in bar ${i+1}`);assert.equal(e.at*4,Math.round(e.at*4),`Samurai Heart event off 16th grid in bar ${i+1}`);time+=e.duration;assert.ok(e.duration>0);for(const n of e.notes){assert.ok(Number.isInteger(n.s)&&n.s>=0&&n.s<6);assert.ok(Number.isInteger(n.f)&&n.f>=0&&n.f<=22);}}
  assert.equal(time,4,`Incorrect Samurai Heart duration in bar ${i+1}`);
 }
-assert.equal(samurai.sections.at(-1)[0],61);
-assert.deepEqual(samurai.score[0].flatMap(e=>e.notes.map(n=>`${n.s}:${n.f}`)),['0:9','0:8','1:8','1:10','1:8','1:7','1:8']);
-assert.deepEqual(samurai.score[54].flatMap(e=>e.notes.map(n=>n.f)),[12,8,10,15,8,10,13,8,10,12,8,10,12,13,12,8]);
-assert.deepEqual(samurai.score[60][0].notes,[{s:0,f:11}]);
+assert.equal(samurai.sections.at(-1)[0],87);
+assert.ok(samurai.score.slice(0,3).every(events=>events.length===1&&!events[0].notes.length),'새 악보의 1–3마디는 카운트인 쉼표');
+assert.deepEqual(samurai.score[3].flatMap(e=>e.notes.map(n=>`${n.s}:${n.f}`)),['1:9','1:8','2:8','2:10','2:8','2:8','2:7','2:8']);
+assert.deepEqual(samurai.score[57].flatMap(e=>e.notes.map(n=>n.f)),[12,8,10,15,8,10,13,8,10,12,8,10,12,13,12,8]);
+assert.deepEqual(samurai.score[89][0].notes,[{s:0,f:11}]);
 p.setSong('silhouette');p.setTab('penta');reg.pentaType.value='minor';
 vm.runInContext(`bar=0;beat=0;draw();`,ctx);
 assert.ok(reg.board.innerHTML.includes('data-score-note="3:9"'));
@@ -293,12 +294,12 @@ assert.equal(reg.songTimeline.hidden,false);assert.equal(reg.chart.hidden,true);
 assert.equal(reg.songSeek.max,'711.75');assert.ok(reg.songTime.textContent.endsWith('/ 3:53'));
 p.seekScore(366);assert.equal(vm.runInContext('bar',ctx),91);assert.equal(vm.runInContext('beat',ctx),2);
 p.setSong('samurai-heart');p.setTab('penta');reg.pentaType.value='minor';reg.bpm.value='113';
-vm.runInContext(`bar=0;beat=.5;draw();`,ctx);
-assert.ok(reg.board.innerHTML.includes('data-score-note="0:9"'));
-assert.ok(reg.board.innerHTML.includes('data-next-note="0:8"'),'다음 한 박자 안의 운지는 점선 원으로 미리 보인다');
-assert.equal(reg.currentLabel.textContent,'현재 마디');assert.equal(reg.current.textContent,'01');assert.equal(reg.next.textContent,'02');
+vm.runInContext(`bar=3;beat=.5;draw();`,ctx);
+assert.ok(reg.board.innerHTML.includes('data-score-note="1:9"'));
+assert.ok(reg.board.innerHTML.includes('data-next-note="1:8"'),'다음 한 박자 안의 운지는 점선 원으로 미리 보인다');
+assert.equal(reg.currentLabel.textContent,'현재 마디');assert.equal(reg.current.textContent,'04');assert.equal(reg.next.textContent,'05');
 assert.equal(reg.boardTitle.textContent,'Samurai Heart · Intro');
-assert.equal(reg.songSeek.max,'243.75');assert.ok(reg.songTime.textContent.endsWith('/ 2:10'));
+assert.equal(reg.songSeek.max,'359.75');assert.ok(reg.songTime.textContent.endsWith('/ 3:11'));
 vm.runInContext(`previousScoreSong='';songDefaults();`,ctx);
 assert.equal(reg.metroOnly.checked,true,'사무라이 하트는 코드 반주가 기본으로 꺼진다');
 p.setSong('silhouette');vm.runInContext(`songDefaults();`,ctx);
@@ -314,7 +315,7 @@ for(let n=0;n<16;n++){ac.currentTime=n*.125;scheduler();}playing=false;`,ctx);
 assert.deepEqual([...sandbox.scheduledGuide].map(e=>e.midi),[59,57,59,62,50,57,59,57]);
 assert.deepEqual([...sandbox.clickTimes],[.5,1.5]);
 vm.runInContext(`playing=false;ac=null;`,ctx);
-console.log('통과 — 코드 단위 이동 · 코드별 스케일 · 스탠다드 10곡 · 실루엣 178마디 · 사무라이 하트 61마디 · 운지/16분음표/쉼표/메트로놈');
+console.log('통과 — 코드 단위 이동 · 코드별 스케일 · 스탠다드 10곡 · 실루엣 178마디 · 사무라이 하트 90마디 · 운지/16분음표/쉼표/메트로놈');
 // The complete score ends once; a selected last-bar loop stays in that bar.
 vm.runInContext(`ac={currentTime:0};playing=true;scoreFinished=false;resumeGuide=false;loopRange=null;scheduleBar=177;scheduleBeat=3.75;nextTime=0;queue=[];countLeft=0;bar=177;beat=3.5;scheduler();ac.currentTime=.13;scheduler();`,ctx);
 assert.equal(vm.runInContext('playing',ctx),false);
