@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>기타 연습 · 연습</title>
+<title>기타 연습 · 홈</title>
 <style>
 @font-face{
   font-family:'Pretendard KR';
@@ -149,14 +149,21 @@ option{background:#252524;color:var(--cream)}
 .mix select{background:#20201e;border:1px solid #55554b;padding:10px;color:var(--cream)}
 .drawer p{font-size:12px;line-height:1.8;color:var(--dim-dark);max-width:95ch;margin:0}
 #custom{width:100%;min-height:88px;background:#181817;border:1px solid #55554b;padding:14px;color:var(--cream);font:13px/1.7 var(--mono);margin-top:16px;resize:vertical}
+.song-tools{display:flex;align-items:center;gap:14px;margin:20px 0}
+.song-tools input{flex:1;min-height:52px;padding:12px 16px;border:1px solid #55554b;background:#20201e;color:var(--cream);font-size:16px}
+.song-tools span{font:12px var(--mono);color:var(--dim-dark);white-space:nowrap}
 .songlist{display:flex;flex-direction:column;gap:2px}
-.songrow{display:flex;align-items:center;justify-content:space-between;gap:20px;text-align:left;background:#232321;border:1px solid #383833;color:var(--cream);padding:22px 24px}
-.songrow:hover{background:#2d2d28}.songrow.is-on{border-left:4px solid var(--yellow)}
+.songitem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px}
+.songrow{width:100%;display:flex;align-items:center;justify-content:space-between;gap:20px;text-align:left;background:#232321;border:1px solid #383833;color:var(--cream);padding:22px 24px}
+.songrow:hover{background:#2d2d28}.songrow.is-on{border-color:var(--yellow);background:#2a2a1e}
 .songrow strong{display:block;font-size:22px;font-weight:500;letter-spacing:-.6px}.songrow small{display:block;font:11px/1.6 var(--mono);color:var(--dim-dark);margin-top:7px}
 .songrow-src{font-size:11px;color:var(--dim-dark);text-align:right}
-.logsum{color:var(--purple);font:13px var(--mono)}.logday{background:#232321;padding:22px;margin-bottom:2px}
-.logday-h{display:flex;justify-content:space-between;border-bottom:1px solid #48483f;padding-bottom:15px}.logday-h strong{font-weight:500}.logday-h span{color:var(--purple);font:12px var(--mono)}
-.logrow{display:grid;grid-template-columns:1fr 1fr auto;gap:16px;padding:16px 0;font-size:13px}.logrow+.logrow{border-top:1px solid #393933}.logrow b{font-weight:500;color:var(--purple)}
+.song-delete{width:76px;border:1px solid #4f4f47;background:#232321;color:var(--dim-dark);font-size:12px}.song-delete:hover{background:var(--peach);color:var(--ink)}
+#songMessage{min-height:18px;margin:10px 0;color:var(--peach);font-size:12px}
+.memo-card{min-height:180px;margin-top:24px;padding:24px;background:#232321;border:1px solid #393936}
+.memo-card .giscus,.memo-card .giscus-frame{width:100%}
+.memo-guide{margin:0 0 18px;color:var(--cream);font-size:13px}
+.memo-help{margin:14px 0 0;color:var(--dim-dark);font-size:11px}
 
 /* Each slot keeps its place while editing; the catalog fills the selected slot. */
 .home-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;align-items:start}
@@ -215,21 +222,21 @@ option{background:#252524;color:var(--cream)}
   <nav class="rail" aria-label="화면 이동">
     <a class="brand" href="#main" aria-label="기타 연습 홈">기타 연습<span aria-hidden="true">.</span></a>
     <div class="rail-menu">
-      <button class="rail-btn" data-screen="main" title="메인" aria-label="메인">
+      <button class="rail-btn" data-screen="main" title="홈" aria-label="홈">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg><span>홈</span></button>
       <button class="rail-btn" data-screen="songs" title="내 곡" aria-label="내 곡">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>내 곡</span></button>
       <button class="rail-btn is-on" data-screen="practice" aria-current="page" title="연습" aria-label="연습">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16M10 4v16M15 4v16M20 4v16"/></svg><span>연습</span></button>
-      <button class="rail-btn" data-screen="log" title="기록" aria-label="기록">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h5"/></svg><span>기록</span></button>
+      <button class="rail-btn" data-screen="memo" title="메모" aria-label="공용 메모">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h5"/></svg><span>메모</span></button>
     </div>
   </nav>
 
   <main class="work">
 
     <section class="panel" id="scr-main" hidden>
-      <div class="panel-head"><h1 class="scr-title">연습</h1><button class="pill" id="homeSettings" aria-expanded="false" aria-controls="homeEditor">개인 설정</button></div>
+      <div class="panel-head"><h1 class="scr-title">홈</h1><button class="pill" id="homeSettings" aria-expanded="false" aria-controls="homeEditor">개인 설정</button></div>
       <div class="home-layout" id="homeLayout">
         <aside id="homeEditor" hidden aria-label="홈 구성 설정">
           <p class="scr-lead" id="slotHint">바꿀 칸을 고른 뒤 항목을 선택하세요.</p>
@@ -245,8 +252,10 @@ option{background:#252524;color:var(--cream)}
     <!-- ── 내 곡 · SONGS·SOURCES 를 그대로 읽어 만든 목록 ─────────── -->
     <section class="panel" id="scr-songs" hidden>
       <h1 class="scr-title">내 곡</h1>
-      <p class="scr-lead"></p>
+      <p class="scr-lead">직접 추가한 곡은 이 브라우저에만 저장됩니다. 다른 사람이나 다른 기기에는 보이지 않습니다.</p>
+      <div class="song-tools"><input id="songSearch" type="search" placeholder="곡 이름, 키, 코드 검색" aria-label="곡 검색" autocomplete="off"><span id="songCount"></span></div>
       <div class="songlist" id="songList"></div>
+      <p id="songMessage" role="status"></p>
       <button id="newSong">＋ 새 곡</button>
     </section>
 
@@ -383,17 +392,33 @@ option{background:#252524;color:var(--cream)}
       <p id="message" role="status"></p>
     </section>
 
-    <!-- ── 기록 · localStorage 만 사용한다 ────────────────────────── -->
-    <section class="panel" id="scr-log" hidden>
+    <!-- ── 공용 메모 · GitHub Discussions ─────────────────────────── -->
+    <section class="panel" id="scr-memo" hidden>
       <div class="panel-head">
-        <h1 class="scr-title">기록</h1>
-        <div class="head-set">
-          <span class="logsum" id="logSum"></span>
-          <button class="pill" id="logClear">기록 비우기</button>
-        </div>
+        <h1 class="scr-title">공용 메모</h1>
+        <a class="pill is-primary" href="https://github.com/51win/guitar-practice/discussions/1" target="_blank" rel="noopener">GitHub에서 열기 ↗</a>
       </div>
-      <p class="scr-lead">30초 이상 연습한 기록이 이 브라우저에 저장됩니다.</p>
-      <div id="logBody"></div>
+      <p class="scr-lead">GitHub 계정으로 메모를 남기면 이 사이트를 사용하는 모두에게 바로 공유됩니다.</p>
+      <div class="memo-card">
+        <p class="memo-guide">연습할 곡, 운지 아이디어, 사이트 수정 의견을 자유롭게 남겨주세요.</p>
+        <script src="https://giscus.app/client.js"
+          data-repo="51win/guitar-practice"
+          data-repo-id="R_kgDOUacvTw"
+          data-category="General"
+          data-category-id="DIC_kwDOUacvT84DFof1"
+          data-mapping="number"
+          data-term="1"
+          data-strict="1"
+          data-reactions-enabled="1"
+          data-emit-metadata="0"
+          data-input-position="top"
+          data-theme="dark_dimmed"
+          data-lang="ko"
+          data-loading="lazy"
+          crossorigin="anonymous"
+          async></script>
+      </div>
+      <p class="memo-help">댓글 입력창이 보이지 않으면 위의 ‘GitHub에서 열기’를 이용해주세요.</p>
     </section>
 
     <section class="drawer" id="drawer" hidden>
@@ -541,7 +566,10 @@ return out.sort((a,b)=>score(a)-score(b));}
 function score(v){let movement=previous? v.notes.reduce((sum,n)=>sum+Math.min(...previous.notes.map(p=>Math.abs(p.midi-n.midi))),0)/v.notes.length:0;return Math.abs(v.mid-anchor)*.75+movement;}
 function refresh(keep=false){candidates=voicings(current());if(!keep||!selected||!candidates.some(v=>JSON.stringify(v.notes)===JSON.stringify(selected.notes)))selected=candidates[0]||null;draw();}
 function upcoming(count=4){const bars=seq(),out=[];let i=bar,slot=chordSlot(i,beat);for(let n=0;n<count;n++){out.push(bars[i][slot]);if(++slot>=bars[i].length){slot=0;i=nextIndex(i);}}return out;}
-function fretEdges(max,width,left=0){const open=width*.035,nut=left+open,scale=(width-open)/(1-2**(-max/12));return [left,...Array.from({length:max+1},(_,f)=>nut+scale*(1-2**(-f/12)))];}
+function fretEdges(max,width,left=0){
+  const open=width*.035,nut=left+open,weights=Array.from({length:max},(_,f)=>.55+.45*2**(-f/12)),unit=(width-open)/weights.reduce((a,b)=>a+b,0);let edge=nut;
+  return [left,nut,...weights.map(weight=>edge+=weight*unit)];
+}
 let chartSignature='';
 function draw(){const ahead=upcoming(),c=ahead[0],ss=seq(),ints=TYPES[c.type],scale=tab==='penta'?PENTATONIC[$('pentaType').value]:null;$('current').textContent=name(c);$('next').textContent=name(ahead[1]);$('third').textContent=name(ahead[2]);$('fourth').textContent=name(ahead[3]);$('notes').textContent=(tab==='triad'?ints.slice(0,3):ints).map(iv=>spell(mod(c.root+iv))).join('  ·  ');$('currentLabel').textContent=tab==='triad'?'현재 코드의 트라이어드':'현재 코드';$('nextNotes').textContent='';$('boardTitle').textContent=tab==='penta'?NAMES[+$('key').value]+' '+($('pentaType').value==='minor'?'마이너':'메이저')+' 펜타토닉':tab==='triad'?'트라이어드':tab==='solo'?'코드톤':'보이싱';$('rangeInfo').textContent=`기준 ${anchor}프렛${tab==='solo'||tab==='penta'?'':' · ±'+radius+'프렛'}`;$('legend').classList.toggle('root-only',!$('degColor').checked);$('legend').hidden=tab==='penta';
 // Preserve bar nodes while moving through a progression so double-click and keyboard focus survive.
@@ -603,7 +631,7 @@ $('prev').onclick=()=>moveChord(-1);$('nextBar').onclick=()=>moveChord(1);
 function drawer(on){$('drawer').hidden=!on;$('settings').classList.toggle('active',on);$('settings').setAttribute('aria-expanded',String(on));if(on)$('drawer').scrollIntoView({block:'nearest'});}
 $('settings').onclick=()=>drawer($('drawer').hidden);
 // Self-contained acoustic-inspired instruments: modal piano, plucked string bass, filtered-noise kit.
-let ac,bus,master,reverb,noiseBuffer,clock=null,queue=[],nextTime=0,scheduleBar=0,scheduleBeat=0,countLeft=0,playedAt=null,playedSong=null;
+let ac,bus,master,reverb,noiseBuffer,clock=null,queue=[],nextTime=0,scheduleBar=0,scheduleBeat=0,countLeft=0;
 let metroBeats=[true,true,true,true];
 function paintMetro(){document.querySelectorAll('[data-beat]').forEach((b,i)=>b.setAttribute('aria-pressed',String(metroBeats[i])));}
 $('beats').onclick=e=>{const b=e.target.closest('[data-beat]');if(b){const i=+b.dataset.beat;metroBeats[i]=!metroBeats[i];paintMetro();}};
@@ -654,15 +682,15 @@ function scheduler(){if(!playing)return;
 }
 
 function paintBeat(b){document.querySelectorAll('.beat').forEach((e,i)=>e.classList.toggle('on',i===b));}
-async function start(withCount=true){try{audio();await ac.resume();if(playing)return;playing=true;scoreFinished=false;resumeGuide=true;playedAt=Date.now();playedSong=$('song').value;scheduleBar=bar;scheduleBeat=hasScore()?Math.max(0,beat):chordStarts(bar)[chordSlot(bar,beat)];countLeft=withCount&&$('countin').value==='1'?4:0;nextTime=ac.currentTime+.08;queue=[];$('play').textContent='Ⅱ 정지';clock=setInterval(scheduler,25);scheduler();}catch(e){$('message').textContent='오디오를 시작하지 못했습니다. Chrome 또는 Edge에서 파일을 열고 다시 눌러주세요.';}}
-function stop(){if(playedAt)logSession();playing=false;clearInterval(clock);queue=[];if(ac&&bus){let old=bus;old.gain.setTargetAtTime(.0001,ac.currentTime,.015);setTimeout(()=>old.disconnect(),100);newBus();}$('play').textContent='▶ 재생';$('playStatus').textContent='정지';paintBeat(-1);}
+async function start(withCount=true){try{audio();await ac.resume();if(playing)return;playing=true;scoreFinished=false;resumeGuide=true;scheduleBar=bar;scheduleBeat=hasScore()?Math.max(0,beat):chordStarts(bar)[chordSlot(bar,beat)];countLeft=withCount&&$('countin').value==='1'?4:0;nextTime=ac.currentTime+.08;queue=[];$('play').textContent='Ⅱ 정지';clock=setInterval(scheduler,25);scheduler();}catch(e){$('message').textContent='오디오를 시작하지 못했습니다. Chrome 또는 Edge에서 파일을 열고 다시 눌러주세요.';}}
+function stop(){playing=false;clearInterval(clock);queue=[];if(ac&&bus){let old=bus;old.gain.setTargetAtTime(.0001,ac.currentTime,.015);setTimeout(()=>old.disconnect(),100);newBus();}$('play').textContent='▶ 재생';$('playStatus').textContent='정지';paintBeat(-1);}
 $('play').onclick=()=>playing?stop():start();$('hear').onclick=async()=>{if(!selected)return;audio();await ac.resume();selected.notes.forEach((n,i)=>note('piano',n.midi,ac.currentTime+.03+i*.025,.24,.9));};$('master').oninput=()=>{if(master)master.gain.setTargetAtTime(+$('master').value/100,ac.currentTime,.02);};$('bpm').onchange=()=>{$('bpm').value=Math.max(40,Math.min(240,Number($('bpm').value)||100));};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('drawer').hidden)drawer(false);if((['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)||e.target.isContentEditable||$('barEditor').open))return;if(view!=='practice')return;if(e.code==='Space'&&e.target.tagName!=='BUTTON'){e.preventDefault();$('play').click();}if(e.key==='ArrowRight'){e.preventDefault();$('nextBar').click();}if(e.key==='ArrowLeft'){e.preventDefault();$('prev').click();}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&playing){stop();$('message').textContent='화면을 떠나 재생을 멈췄습니다. 현재 마디부터 다시 시작할 수 있습니다.';}});
 new ResizeObserver(()=>draw()).observe($('board'));
 
 // 화면 이동
-const VIEWS=['main','songs','practice','log'],VIEWNAME={main:'메인',songs:'내 곡',practice:'연습',log:'기록'};
+const VIEWS=['main','songs','practice','memo'],VIEWNAME={main:'홈',songs:'내 곡',practice:'연습',memo:'메모'};
 const TABNAME={voicing:'보이싱',triad:'트라이어드',solo:'코드톤',penta:'펜타토닉'};
 let view='practice';
 function go(v){
@@ -673,7 +701,6 @@ function go(v){
   if(v!=='practice'){stop();drawer(false);}
   if(v==='songs')drawSongs();
   if(v==='practice')syncSongEditor();
-  if(v==='log')drawLog();
   document.title='기타 연습 · '+VIEWNAME[v];
   if(location.hash.slice(1)!==v)location.hash=v;
   scrollTo(0,0);
@@ -768,26 +795,21 @@ $('tileCatalog').onclick=e=>{const button=e.target.closest('[data-add]');if(butt
 $('colorChoices').onclick=e=>{const button=e.target.closest('[data-color]');if(button&&activeSlot!==null&&Object.hasOwn(PALETTE,button.dataset.color)){slots[activeSlot].color=button.dataset.color;saveHome();drawHome();$('colorChoices').querySelector(`[data-color="${button.dataset.color}"]`)?.focus();}};
 drawHome();
 
-function preview(id){return SONGS[id].slice(0,4).map(b=>{try{return parseBar(b).map(name).join(' ')}catch{return b}}).join(' | ')+(SONGS[id].length>4?' …':'');}
-function drawSongs(){$('newSong').textContent=draft?'작성 중인 곡 이어서 편집':'＋ 새 곡';$('songList').innerHTML=[...$('song').options].map(o=>{const s=SOURCES[o.value];
-  return '<button class="songrow'+(o.value===$('song').value?' is-on':'')+'" data-song="'+o.value+'"><span><strong>'+esc(o.textContent)+'</strong><small>'+SONGS[o.value].length+'마디 · '+esc(KEYS[o.value]||'C')+' · '+esc(preview(o.value))+'</small></span><span class="songrow-src">'+(s?esc(s[0]):'직접 입력한 진행')+'</span></button>';}).join('');}
-$('songList').onclick=e=>{const b=e.target.closest('[data-song]');if(!b)return;$('song').value=b.dataset.song;fillKeys();resetProgression();go('practice');if(hasScore())setTab('penta');};
-
-const LOG='guitar-practice-log-v1';
-function logRead(){try{const v=JSON.parse(localStorage.getItem(LOG));return Array.isArray(v)?v:[]}catch{return[]}}
-function logSession(){const sec=Math.round((Date.now()-playedAt)/1000);playedAt=null;
-  if(sec<30)return;   // 잘못 누른 재생은 남기지 않는다
-  try{const l=logRead();l.push({d:new Date().toLocaleDateString('sv-SE'),song:playedSong,key:NAMES[+$('key').value],sec,bpm:tempo(),tab});localStorage.setItem(LOG,JSON.stringify(l.slice(-1000)));}catch{}}
-const span=s=>s>=3600?Math.floor(s/3600)+'시간 '+Math.round(s%3600/60)+'분':s>=60?Math.round(s/60)+'분':s+'초';
 function songTitle(id){const o=[...$('song').options].find(x=>x.value===id);return o?o.textContent:id;}
-function drawLog(){const l=logRead();
-  if(!l.length){$('logSum').textContent='';$('logClear').disabled=true;$('logBody').innerHTML='<p class="scr-lead">아직 기록이 없습니다. 연습 화면에서 재생해보세요.</p>';return;}
-  $('logClear').disabled=false;
-  const days=new Map();for(const e of l){const d=esc(e.d);if(!days.has(d))days.set(d,[]);days.get(d).push(e);}
-  const secs=es=>es.reduce((a,e)=>a+(Number(e.sec)||0),0);
-  $('logSum').textContent=days.size+'일 · 총 '+span(secs(l));
-  $('logBody').innerHTML=[...days].reverse().map(([d,es])=>'<div class="logday"><div class="logday-h"><strong>'+d+'</strong><span>'+span(secs(es))+'</span></div>'+es.slice().reverse().map(e=>'<div class="logrow"><span>'+esc(songTitle(e.song))+'</span><span class="muted-d">'+esc(e.key||'')+' · '+esc(e.bpm||'')+' BPM · '+esc(TABNAME[e.tab]||'')+'</span><b>'+span(Number(e.sec)||0)+'</b></div>').join('')+'</div>').join('');}
-$('logClear').onclick=()=>{if(!confirm('연습 기록을 모두 지웁니다. 되돌릴 수 없습니다.'))return;try{localStorage.removeItem(LOG)}catch{}drawLog();};
+function preview(id){return SONGS[id].slice(0,4).map(b=>{try{return parseBar(b).map(name).join(' ')}catch{return b}}).join(' | ')+(SONGS[id].length>4?' …':'');}
+function drawSongs(){
+  $('newSong').textContent=draft?'작성 중인 곡 이어서 편집':'＋ 새 곡';
+  const query=$('songSearch').value.trim().toLowerCase(),options=[...$('song').options].filter(o=>!query||`${o.textContent} ${KEYS[o.value]||''} ${SONGS[o.value]?.join(' ')||''}`.toLowerCase().includes(query));
+  $('songCount').textContent=query?`${options.length}곡 찾음`:`${$('song').options.length}곡`;
+  $('songList').innerHTML=options.length?options.map(o=>{const s=SOURCES[o.value],deletable=Object.hasOwn(userSongs,o.value);
+    return '<div class="songitem"><button class="songrow'+(o.value===$('song').value?' is-on':'')+'" data-song="'+o.value+'"><span><strong>'+esc(o.textContent)+'</strong><small>'+SONGS[o.value].length+'마디 · '+esc(KEYS[o.value]||'C')+' · '+esc(preview(o.value))+'</small></span><span class="songrow-src">'+(s?esc(s[0]):'이 브라우저에 저장됨')+'</span></button>'+(deletable?'<button class="song-delete" data-delete-song="'+o.value+'" aria-label="'+esc(o.textContent)+' 삭제">삭제</button>':'')+'</div>';}).join(''):'<p class="scr-lead">검색 결과가 없습니다.</p>';
+}
+function deleteSong(id){
+  if(!Object.hasOwn(userSongs,id))return;const title=songTitle(id);if(!confirm(`“${title}” 곡을 삭제할까요?`))return;
+  try{const saved={...userSongs};delete saved[id];localStorage.setItem(USER_SONGS_KEY,JSON.stringify(saved));userSongs=saved;delete SONGS[id];delete KEYS[id];[...$('song').options].find(o=>o.value===id)?.remove();if(draft?.target===id){draft.target=null;persistDraft();}for(const slot of slots)if(slot.id==='song:'+id)slot.id=null;songCatalog();saveHome();if($('song').value===id){$('song').value='blues';fillKeys();resetProgression();}drawHome();drawSongs();$('songMessage').textContent=`${title}을 삭제했습니다.`;}catch{$('songMessage').textContent='곡을 삭제하지 못했습니다. 브라우저 저장 공간을 확인해주세요.';}
+}
+$('songSearch').oninput=drawSongs;
+$('songList').onclick=e=>{const remove=e.target.closest('[data-delete-song]');if(remove){deleteSong(remove.dataset.deleteSong);return;}const b=e.target.closest('[data-song]');if(!b)return;$('song').value=b.dataset.song;fillKeys();resetProgression();go('practice');if(hasScore())setTab('penta');};
 
 go(decodeURIComponent(location.hash.slice(1))||'main');
 refresh();

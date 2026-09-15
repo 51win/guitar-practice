@@ -43,7 +43,7 @@ sandbox.localStorage = { getItem: key => storage.get(key)??null, setItem: (key,v
 const ctx = vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(new URL('./repertoire.js', import.meta.url), 'utf8'),ctx);
 vm.runInContext(src + `
-;globalThis.probe = { seq, NAMES, KEYS, keyOf, shift, voicings, current, span, esc, parseBar, name, dotStyle, fretEdges, cleanSlots, validateSong, upcoming, editedBars, openNewSong, applyBarEdit, saveSong, putTile, selectAnchor: setAnchor,
+;globalThis.probe = { seq, NAMES, KEYS, keyOf, shift, voicings, current, esc, parseBar, name, dotStyle, fretEdges, cleanSlots, validateSong, upcoming, editedBars, openNewSong, applyBarEdit, saveSong, deleteSong, drawSongs, putTile, selectAnchor: setAnchor,
   renderPenta(kind){ tab = 'penta'; document.getElementById('pentaType').value = kind; draw(); },
   setKey(v){ document.getElementById('key').value = String(v); },
   setSong(s){ document.getElementById('song').value = s; fillKeys(); },
@@ -88,7 +88,6 @@ CHECKED.shapeSet = ['drop14'];
 assert.deepEqual([...new Set(p.voicings(p.current()).map(v => v.shape))], ['drop14'], '하나만 켜면 하나만');
 
 // ── 4. 표시 형식 · 이스케이프 ───────────────────────────────
-assert.deepEqual([p.span(25), p.span(480), p.span(5400)], ['25초', '8분', '1시간 30분']);
 assert.equal(p.esc('<img onerror="x">'), '&lt;img onerror=&quot;x&quot;&gt;');
 
 // 도수 색은 모드를 바꾸어도 유지하고, 색을 끄면 루트만 구분한다.
@@ -107,7 +106,10 @@ const edges = [...p.fretEdges(22,1000)];
 assert.equal(edges.length,24);
 assert.ok(Math.abs(edges.at(-1)-1000)<1e-9);
 assert.ok(edges.every((x,i)=>i===0||x>edges[i-1]));
-assert.ok(Math.abs((edges[3]-edges[2])/(edges[2]-edges[1])-2**(-1/12))<1e-10);
+const firstFret=edges[2]-edges[1],secondFret=edges[3]-edges[2],lastFret=edges.at(-1)-edges.at(-2);
+assert.ok(secondFret<firstFret, '프렛은 올라갈수록 좁아진다');
+assert.ok(secondFret/firstFret>2**(-1/12), '실제 비율보다 감소 폭을 완만하게 보정한다');
+assert.ok(lastFret/firstFret>.65, '높은 프렛도 읽고 누를 폭을 확보한다');
 
 // 펜타토닉은 코드 루트가 아니라 선택한 키 기준이다.
 p.setSong('blues'); p.setKey(0);
@@ -145,7 +147,7 @@ for(let b=0;b<4;b++){ac.currentTime=b*.6;scheduler();}playing=false;`,ctx);
 assert.deepEqual([...sandbox.clickTimes].map(t=>Math.round(t*10)),[6,18]);
 
 // 새 곡 화면 → 한 마디 2/4코드 편집 → 저장. 등록된 곡은 홈에 자동 추가하지 않는다.
-vm.runInContext('ac=null;playedAt=null;playing=false;',ctx);
+vm.runInContext('ac=null;playing=false;',ctx);
 p.openNewSong();
 reg.editSongTitle.value='테스트 <곡>';
 p.applyBarEdit(['Dm7','G7']);
@@ -175,12 +177,24 @@ assert.equal(storage.has('guitar-home-v2'),false);
 p.applyBarEdit(['Dm7','G7']);p.saveSong();
 assert.equal(Object.keys(JSON.parse(storage.get('guitar-songs-v1'))).length,1);
 assert.equal(Object.values(JSON.parse(storage.get('guitar-songs-v1')))[0].bars[0],'Dm7 G7');
+// 제목·키·코드 검색과 사용자 곡 삭제는 브라우저 저장값까지 함께 갱신한다.
+const userId=Object.keys(JSON.parse(storage.get('guitar-songs-v1')))[0];
+reg.songSearch.value='테스트';p.drawSongs();
+assert.ok(reg.songList.innerHTML.includes('테스트 &lt;곡&gt;'));
+assert.equal(reg.songCount.textContent,'1곡 찾음');
+reg.song.value=userId;sandbox.confirm=()=>false;p.deleteSong(userId);
+assert.ok(Object.hasOwn(JSON.parse(storage.get('guitar-songs-v1')),userId),'취소하면 곡을 보존한다');
+sandbox.confirm=()=>true;p.deleteSong(userId);
+assert.ok(!Object.hasOwn(JSON.parse(storage.get('guitar-songs-v1')),userId));
+assert.ok(!reg.song.options.some(o=>o.value===userId));
+assert.equal(reg.song.value,'blues');
+assert.ok(reg.songMessage.textContent.includes('삭제했습니다'));
 vm.runInContext("slots=cleanSlots(Array(11).fill('voicing'));activeSlot=null;putTile('solo');",ctx);
 assert.ok(reg.homeMessage.textContent.includes('11칸'));
-console.log('통과 — 음악 로직 · 프렛 · 펜타토닉 · 메트로놈 · 4코드 미리보기 · 11칸/색상 · 새 곡 편집/저장');
+console.log('통과 — 음악 로직 · 프렛 · 펜타토닉 · 메트로놈 · 4코드 미리보기 · 11칸/색상 · 곡 편집/검색/삭제');
 
 // Chord navigation preserves half-bar and quarter-bar positions, including loop boundaries.
-vm.runInContext(`playing=false;ac=null;playedAt=null;loopRange=null;bar=0;beat=0;`,ctx);
+vm.runInContext(`playing=false;ac=null;loopRange=null;bar=0;beat=0;`,ctx);
 p.setSong('blues');
 vm.runInContext(`chooseBar(3);moveChord(1);`,ctx);
 assert.equal(p.name(p.current()),'F7');
