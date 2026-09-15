@@ -11,7 +11,30 @@ const STANDARD_PRESETS=[
  {id:'so-what',title:'So What',key:'Dm',bars:[...Array(16).fill('Dm7'),...Array(8).fill('Ebm7'),...Array(8).fill('Dm7')].join('|'),url:'https://www.fouronsixmusic.com/post/how-to-improvise-on-miles-davis-so-what-a-beginner-s-guide-to-modal-jazz-improvisation',source:'Four on Six Music',note:'32마디 · D 도리안 16마디 → E♭ 도리안 8마디 → D 도리안 8마디. 보이싱은 m7로 표시.'}
 ];
 
-// Silhouette: manually entered from the user's six tab photographs (183 BPM, 178 bars).
+// Index from the user's Charlie Parker for Guitar PDF. The copyrighted score itself is not bundled.
+const PARKER_BOOK=[
+ {title:'Billie’s Bounce (Bill’s Bounce)',start:18,end:25},
+ {title:'Now’s the Time · 1945',start:26,end:28},
+ {title:'Anthropology',start:29,end:33},
+ {title:'Ko Ko',start:34,end:42},
+ {title:'Moose the Mooche',start:43,end:48},
+ {title:'Yardbird Suite',start:49,end:52},
+ {title:'Ornithology',start:53,end:56},
+ {title:'Donna Lee',start:57,end:62},
+ {title:'Cheryl',start:63,end:65},
+ {title:'Scrapple from the Apple',start:66,end:68},
+ {title:'Parker’s Mood',start:69,end:72},
+ {title:'Blues (Fast)',start:73,end:75},
+ {title:'Bloomdido',start:76,end:79},
+ {title:'Au Privave',start:80,end:82},
+ {title:'K.C. Blues',start:83,end:85},
+ {title:'Blues for Alice',start:86,end:88},
+ {title:'Kim',start:89,end:92},
+ {title:'Now’s the Time · 1953',start:93,end:97},
+ {title:'Confirmation',start:98,end:102}
+];
+
+// Silhouette: entered from the user's six-page high-resolution tab (183 BPM, 178 bars).
 // Tokens use printed string numbers (1 = high E). @ = quarter-note duration;
 // + = simultaneous notes; ~ = continuation of a tie from the previous bar.
 // The photos and lyrics are not bundled with this site.
@@ -66,4 +89,38 @@ const SILHOUETTE=(()=>{
  notes(171,'1:22@4','~1:22@4','~1:22@4','~1:22@4',riff,fill,riff,'4:9 3:7 4:0 4:7 4:9 2:8 3:7 3:9');
  const sections=[[1,'Intro'],[9,'Intro · 멜로디'],[17,'A'],[25,'A · 리프'],[33,'B'],[41,'C'],[57,'Interlude'],[59,'A′'],[67,'A′ · 리프'],[75,'B′'],[83,'C′'],[99,'Interlude′'],[107,'멜로디'],[117,'D'],[133,'D · 높은 포지션'],[149,'연결'],[155,'Outro'],[163,'Outro · 높은 포지션'],[171,'Ending']];
  return {bars,score,sections};
+})();
+
+// Samurai Heart (Some Like It Hot!!): 61-bar lead-guitar part from the user's tab.
+// Muted strums are omitted from the visual guide; pitched movements are condensed
+// onto a sixteenth-note grid so the fretboard remains readable at full tempo.
+const SAMURAI_HEART=(()=>{
+ const bars=Array(61),score=Array(61);
+ const harmony=['Ab','G7','Cm','Eb'];
+ for(let i=0;i<61;i++)bars[i]=harmony[i%4];
+ ['Fm','Gm','Ab','G7'].forEach((c,i)=>bars[12+i]=c);
+ ['Cm','Ab','Eb','Bb/D','Cm','Ab','Eb','Bb/D'].forEach((c,i)=>bars[16+i]=c);
+ ['Fm','Gm','Ab','G7'].forEach((c,i)=>bars[38+i]=c);
+ function line(text){
+  const tokens=text.trim().split(/\s+/),count=tokens.length;
+  return tokens.map((token,i)=>{const at=Math.floor(i*16/count)/4,duration=Math.floor((i+1)*16/count)/4-at,[body,technique='']=token.split('!'),notes=body==='rest'?[]:body.split('+').map(value=>{const [s,f]=value.split(':').map(Number);return{s:s-1,f};});return{at,duration,notes,technique,tie:false};});
+ }
+ function set(first,...patterns){patterns.forEach((pattern,i)=>score[first-1+i]=line(pattern));}
+ const riffA='2:9 2:8 3:8 3:10 3:8 3:7 3:8';
+ const riffB='2:9 2:8 3:8 3:10 3:8 4:8';
+ const mutedA='3:7 3:8 3:8 3:7 3:8 3:8 3:7 3:8 3:10 3:8';
+ const mutedB='3:7 3:8 3:8 3:7 3:8 3:8';
+ const leadA='2:8 1:11 2:10 2:8 2:10 2:8';
+ const leadB='2:8 3:10 2:8 2:10 2:10 2:8 2:10';
+ const leadC='2:8 3:10 2:8 2:10 2:10 2:10!bend 2:10 2:8';
+ const leadD='rest 2:10!bend 2:8 2:10!bend 2:8';
+ set(1,riffA,riffB,riffA,mutedA,mutedB,mutedA,mutedB,'3:7 3:8 3:8 3:7 3:8 3:10 3:8 3:7',mutedB,'3:7 3:8 3:8 3:7 3:8 3:10',mutedB,'3:7 3:8 3:8 1:11 1:9 2:8');
+ const lowA='6:1 6:1 4:5 4:6 5:3 5:3 4:5 4:6 4:5';
+ const lowB='5:4 5:4 4:5 4:6 5:6 5:6 4:5 4:6 4:5';
+ set(13,lowA,lowB,lowA,'5:6+6:4 5:6+6:4 5:6+6:4 5:8+6:6 5:8+6:6 5:8+6:6',leadA,leadB,leadC,leadD,'2:8 1:11 2:10 2:8 2:10 2:8',leadB,leadC,'rest 2:10!bend 2:8 2:10 2:8 2:7');
+ set(25,riffA,'2:8 1:11 rest rest',riffA,riffB,'5:6 5:8 5:8 5:5 5:6 5:6 5:6 5:8 5:8 5:8 4:6!slide 4:7 4:8','2:10 1:11!bend 2:10 1:11!bend 2:10 2:8 2:10 1:11+2:11',mutedB,mutedA,mutedB,'3:7 3:8 3:8 3:10 3:8 3:7',mutedB,mutedA,mutedB,riffB);
+ set(39,lowA,lowB,lowA,'5:6+6:4 5:6+6:4 5:6+6:4 5:8+6:6 5:8+6:6 5:8+6:6',leadA,leadB,leadC,leadD,leadA,leadB,leadC,'rest 2:10!bend 2:8 2:10!bend 2:8',leadA,leadB,leadC,'rest 2:10!bend 2:8 2:10!bend 2:8');
+ set(55,'1:12 1:8 1:10 1:15 1:8 1:10 1:13 1:8 1:10 1:12 1:8 1:10 1:12 1:13 1:12 1:8','1:12 1:8 1:10 1:15 1:8 1:10 1:13 1:8 1:10 1:12 1:8 1:10 1:12 1:10 1:8','2:8 1:11 2:10 2:8 2:10 1:12!slide','rest 1:11 1:13 1:11 1:13 1:15 1:11 1:13','1:11 2:12 1:11 1:12 1:11 1:13 1:11 1:13','1:13!bend 1:13!bend 1:13!bend 1:13!bend 1:13 1:11 1:13','1:11!tremolo');
+ const sections=[[1,'Intro'],[4,'Main riff'],[13,'Verse'],[17,'Chorus'],[25,'Main riff · reprise'],[29,'Verse · variation'],[39,'Bridge'],[43,'Chorus · lead'],[55,'Solo'],[61,'Ending']];
+ return{bars,score,sections};
 })();

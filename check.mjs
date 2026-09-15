@@ -46,7 +46,7 @@ sandbox.localStorage = { getItem: key => storage.get(key)??null, setItem: (key,v
 const ctx = vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(new URL('./repertoire.js', import.meta.url), 'utf8'),ctx);
 vm.runInContext(src + `
-;globalThis.probe = { seq, NAMES, KEYS, keyOf, shift, voicings, current, esc, parseBar, name, dotStyle, fretEdges, cleanSlots, validateSong, upcoming, editedBars, openNewSong, applyBarEdit, saveSong, deleteSong, drawSongs, putTile, selectAnchor: setAnchor,
+;globalThis.probe = { seq, NAMES, KEYS, keyOf, shift, voicings, current, esc, parseBar, name, dotStyle, pentaStyle, fretEdges, cleanSlots, validateSong, upcoming, editedBars, openNewSong, applyBarEdit, saveSong, deleteSong, drawSongs, putTile, selectAnchor: setAnchor, selectTab: setTab, syncTimeline, seekScore, formatTime,
   renderPenta(kind){ tab = 'penta'; document.getElementById('pentaType').value = kind; draw(); },
   setKey(v){ document.getElementById('key').value = String(v); },
   setSong(s){ document.getElementById('song').value = s; fillKeys(); },
@@ -131,6 +131,14 @@ p.renderPenta('minor');
 assert.deepEqual(shownNotes(), ['B♭','C','E♭','F','G']);
 p.setKey(9); p.renderPenta('minor');
 assert.deepEqual(shownNotes(), ['A','C','D','E','G']);
+assert.ok(reg.board.innerHTML.includes('data-penta-shape="true"'));
+assert.ok(reg.board.innerHTML.includes('data-penta-other="true"'));
+p.selectTab('penta');
+assert.equal(reg.degColor.checked,false,'펜타토닉은 처음에 루트만 색으로 표시한다');
+assert.equal(reg.degColorLabel.textContent,'1·♭3·4·5·♭7 색');
+reg.degColor.checked=true;reg.degColor.onchange();
+assert.equal(p.pentaStyle(3).fill,'var(--mint)');
+assert.equal(p.pentaStyle(10).fill,'#79a7ff');
 
 // 실제 메트로놈 함수가 2·4박만 예약하고, 모두 끄면 예약하지 않는지 확인한다.
 vm.runInContext(`globalThis.clickTimes=[]; metroClick=t=>clickTimes.push(t);
@@ -192,7 +200,7 @@ assert.equal(Object.values(JSON.parse(storage.get('guitar-songs-v1')))[0].bars[0
 const userId=Object.keys(JSON.parse(storage.get('guitar-songs-v1')))[0];
 reg.songSearch.value='테스트';p.drawSongs();
 assert.ok(reg.songList.innerHTML.includes('테스트 &lt;곡&gt;'));
-assert.equal(reg.songCount.textContent,'1곡 찾음');
+assert.equal(reg.songCount.textContent,'연습 1 · 악보 0');
 reg.song.value=userId;sandbox.confirm=()=>false;p.deleteSong(userId);
 assert.ok(Object.hasOwn(JSON.parse(storage.get('guitar-songs-v1')),userId),'취소하면 곡을 보존한다');
 sandbox.confirm=()=>true;p.deleteSong(userId);
@@ -242,6 +250,11 @@ for(const id of vm.runInContext('STANDARD_PRESETS.map(p=>p.id)',ctx)){
 
 // Every photographed measure is represented; 16th-note durations also cover the final slide.
 const score=JSON.parse(vm.runInContext('JSON.stringify(SILHOUETTE)',ctx));
+const samurai=JSON.parse(vm.runInContext('JSON.stringify(SAMURAI_HEART)',ctx));
+const parker=JSON.parse(vm.runInContext('JSON.stringify(PARKER_BOOK)',ctx));
+assert.equal(parker.length,19);
+assert.equal(parker[0].start,18);assert.equal(parker.at(-1).end,102);
+assert.ok(parker.every((item,i)=>i===0||item.start===parker[i-1].end+1),'PDF 악보 범위가 18–102쪽을 빠짐없이 잇는다');
 assert.equal(score.bars.length,178);assert.equal(score.score.length,178);
 for(let i=0;i<178;i++){
  assert.ok(score.bars[i],`Missing chord bar ${i+1}`);
@@ -254,6 +267,14 @@ assert.deepEqual(score.score[0].map(e=>e.notes[0].s),[3,3,3,2,3,3,3,3]);
 assert.equal(score.score[116][0].notes.length,0,'117마디 전체 쉼표');
 assert.equal(score.score[166].at(-1).duration,.25,'167마디 마지막 슬라이드');
 assert.equal(score.score[171][0].tie,true,'172마디는 171마디에서 붙임줄');
+assert.equal(samurai.bars.length,61);assert.equal(samurai.score.length,61);
+for(let i=0;i<61;i++){
+ assert.ok(samurai.bars[i],`Missing Samurai Heart chord bar ${i+1}`);
+ const events=samurai.score[i];assert.ok(events?.length,`Missing Samurai Heart score bar ${i+1}`);
+ let time=0;for(const e of events){assert.equal(e.at,time,`Samurai Heart gap/overlap in bar ${i+1}`);time+=e.duration;assert.ok(e.duration>0);for(const n of e.notes){assert.ok(Number.isInteger(n.s)&&n.s>=0&&n.s<6);assert.ok(Number.isInteger(n.f)&&n.f>=0&&n.f<=22);}}
+ assert.equal(time,4,`Incorrect Samurai Heart duration in bar ${i+1}`);
+}
+assert.equal(samurai.sections.at(-1)[0],61);
 p.setSong('silhouette');p.setTab('penta');reg.pentaType.value='minor';
 vm.runInContext(`bar=0;beat=0;draw();`,ctx);
 assert.ok(reg.board.innerHTML.includes('data-score-note="3:9"'));
@@ -261,6 +282,19 @@ vm.runInContext(`bar=116;beat=2;draw();`,ctx);
 assert.ok(!reg.board.innerHTML.includes('data-score-note='),'쉼표에서 큰 운지 원이 사라져야 함');
 vm.runInContext(`bar=166;beat=3.75;draw();`,ctx);
 assert.ok(reg.board.innerHTML.includes('data-score-note="0:17"'));
+vm.runInContext(`previousGuide=[{s:0,f:1}];bar=0;beat=0;draw();`,ctx);
+assert.ok(reg.board.innerHTML.includes('data-previous-note="0:1"'),'직전 악보 운지는 연한 잔상으로 남긴다');
+reg.bpm.value='183';vm.runInContext(`bar=0;beat=0;syncTimeline();`,ctx);
+assert.equal(reg.songTimeline.hidden,false);assert.equal(reg.chart.hidden,true);assert.equal(reg.chartTools.hidden,true);
+assert.equal(reg.songSeek.max,'711.75');assert.ok(reg.songTime.textContent.endsWith('/ 3:53'));
+p.seekScore(366);assert.equal(vm.runInContext('bar',ctx),91);assert.equal(vm.runInContext('beat',ctx),2);
+p.setSong('samurai-heart');p.setTab('penta');reg.pentaType.value='minor';reg.bpm.value='113';
+vm.runInContext(`bar=0;beat=0;draw();`,ctx);
+assert.ok(reg.board.innerHTML.includes('data-score-note="1:9"'));
+assert.equal(reg.boardTitle.textContent,'Samurai Heart · Intro');
+assert.equal(reg.songSeek.max,'243.75');assert.ok(reg.songTime.textContent.endsWith('/ 2:10'));
+p.setSong('blues');p.syncTimeline();assert.equal(reg.songTimeline.hidden,true);assert.equal(reg.chart.hidden,false);
+p.setSong('silhouette');
 
 // Scheduler advances at the score's eighth notes while the metronome remains on four beats.
 vm.runInContext(`globalThis.scheduledGuide=[];note=(kind,midi,t,volume,duration)=>scheduledGuide.push({midi,t,duration});
@@ -270,7 +304,7 @@ for(let n=0;n<16;n++){ac.currentTime=n*.125;scheduler();}playing=false;`,ctx);
 assert.deepEqual([...sandbox.scheduledGuide].map(e=>e.midi),[59,57,59,62,50,57,59,57]);
 assert.deepEqual([...sandbox.clickTimes],[.5,1.5]);
 vm.runInContext(`playing=false;ac=null;`,ctx);
-console.log('통과 — 코드 단위 이동 · 코드별 스케일 · 스탠다드 10곡 · 실루엣 178마디/운지/16분음표/쉼표/메트로놈');
+console.log('통과 — 코드 단위 이동 · 코드별 스케일 · 스탠다드 10곡 · 실루엣 178마디 · 사무라이 하트 61마디 · 운지/16분음표/쉼표/메트로놈');
 // The complete score ends once; a selected last-bar loop stays in that bar.
 vm.runInContext(`ac={currentTime:0};playing=true;scoreFinished=false;resumeGuide=false;loopRange=null;scheduleBar=177;scheduleBeat=3.75;nextTime=0;queue=[];countLeft=0;bar=177;beat=3.5;scheduler();ac.currentTime=.13;scheduler();`,ctx);
 assert.equal(vm.runInContext('playing',ctx),false);
