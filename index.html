@@ -160,10 +160,16 @@ option{background:#252524;color:var(--cream)}
 .songrow-src{font-size:11px;color:var(--dim-dark);text-align:right}
 .song-delete{width:76px;border:1px solid #4f4f47;background:#232321;color:var(--dim-dark);font-size:12px}.song-delete:hover{background:var(--peach);color:var(--ink)}
 #songMessage{min-height:18px;margin:10px 0;color:var(--peach);font-size:12px}
-.memo-card{min-height:180px;margin-top:24px;padding:24px;background:#232321;border:1px solid #393936}
-.memo-card .giscus,.memo-card .giscus-frame{width:100%}
-.memo-guide{margin:0 0 18px;color:var(--cream);font-size:13px}
-.memo-help{margin:14px 0 0;color:var(--dim-dark);font-size:11px}
+.chat-card{margin-top:24px;background:#20201e;border:1px solid #41413b}
+.chat-live{display:flex;align-items:center;gap:8px;font:11px var(--mono);color:var(--dim-dark)}.chat-live:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 4px #31cfa31a}
+.chat-list{height:min(52vh,520px);min-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:24px;background:#181817}
+.chat-empty{margin:auto;color:var(--dim-dark);font-size:13px;text-align:center}
+.chat-message{align-self:flex-start;max-width:min(72%,680px)}.chat-message.mine{align-self:flex-end;text-align:right}
+.chat-meta{display:flex;gap:8px;align-items:center;margin:0 4px 5px;color:var(--dim-dark);font:10px var(--mono)}.chat-message.mine .chat-meta{justify-content:flex-end}
+.chat-meta strong{color:var(--cream);font:500 12px var(--ui)}
+.chat-text{display:inline-block;margin:0;padding:11px 14px;background:#30302c;border:1px solid #44443d;color:var(--cream);font-size:14px;line-height:1.55;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}.chat-message.mine .chat-text{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+.chat-form{display:grid;grid-template-columns:190px minmax(260px,1fr) auto;gap:10px;padding:16px;background:#232321;border-top:1px solid #41413b}.chat-form label{display:flex;flex-direction:column;gap:6px;color:var(--dim-dark);font-size:10px}.chat-form input,.chat-form textarea{width:100%;min-width:0;height:48px;padding:12px;border:1px solid #55554d;background:#171716;color:var(--cream);font:14px var(--ui);resize:none}.chat-form button{align-self:end;height:48px;min-width:92px}.chat-form input:focus,.chat-form textarea:focus{outline:2px solid var(--yellow);outline-offset:1px}
+#chatStatus{min-height:18px;margin:10px 0 0;color:var(--peach);font-size:11px}.memo-help{margin:14px 0 0;color:var(--dim-dark);font-size:11px}.memo-help a{color:var(--cream)}
 
 /* Each slot keeps its place while editing; the catalog fills the selected slot. */
 .home-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;align-items:start}
@@ -228,8 +234,8 @@ option{background:#252524;color:var(--cream)}
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>내 곡</span></button>
       <button class="rail-btn is-on" data-screen="practice" aria-current="page" title="연습" aria-label="연습">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16M10 4v16M15 4v16M20 4v16"/></svg><span>연습</span></button>
-      <button class="rail-btn" data-screen="memo" title="메모" aria-label="공용 메모">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h5"/></svg><span>메모</span></button>
+      <button class="rail-btn" data-screen="memo" title="채팅" aria-label="공용 채팅">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h5"/></svg><span>채팅</span></button>
     </div>
   </nav>
 
@@ -392,33 +398,23 @@ option{background:#252524;color:var(--cream)}
       <p id="message" role="status"></p>
     </section>
 
-    <!-- ── 공용 메모 · GitHub Discussions ─────────────────────────── -->
+    <!-- ── 공용 채팅 · 닉네임은 이 브라우저에만 저장한다 ─────────── -->
     <section class="panel" id="scr-memo" hidden>
       <div class="panel-head">
-        <h1 class="scr-title">공용 메모</h1>
-        <a class="pill is-primary" href="https://github.com/51win/guitar-practice/discussions/1" target="_blank" rel="noopener">GitHub에서 열기 ↗</a>
+        <h1 class="scr-title">공용 채팅</h1>
+        <span class="chat-live" id="chatLive">연결 중</span>
       </div>
-      <p class="scr-lead">GitHub 계정으로 메모를 남기면 이 사이트를 사용하는 모두에게 바로 공유됩니다.</p>
-      <div class="memo-card">
-        <p class="memo-guide">연습할 곡, 운지 아이디어, 사이트 수정 의견을 자유롭게 남겨주세요.</p>
-        <script src="https://giscus.app/client.js"
-          data-repo="51win/guitar-practice"
-          data-repo-id="R_kgDOUacvTw"
-          data-category="General"
-          data-category-id="DIC_kwDOUacvT84DFof1"
-          data-mapping="number"
-          data-term="1"
-          data-strict="1"
-          data-reactions-enabled="1"
-          data-emit-metadata="0"
-          data-input-position="top"
-          data-theme="dark_dimmed"
-          data-lang="ko"
-          data-loading="lazy"
-          crossorigin="anonymous"
-          async></script>
+      <p class="scr-lead">회원가입 없이 닉네임만 정하면 대화할 수 있습니다. 새 메시지는 자동으로 표시됩니다.</p>
+      <div class="chat-card">
+        <div class="chat-list" id="chatList" role="log" aria-live="polite" aria-label="공용 채팅 메시지"><p class="chat-empty">메시지를 불러오고 있습니다.</p></div>
+        <form class="chat-form" id="chatForm">
+          <label>닉네임<input id="chatName" maxlength="20" placeholder="예: 재즈기타" autocomplete="nickname" required></label>
+          <label>메시지<textarea id="chatMessage" maxlength="300" rows="1" placeholder="메시지를 입력하세요" required></textarea></label>
+          <button class="pill is-primary" id="chatSend" type="submit">보내기</button>
+        </form>
       </div>
-      <p class="memo-help">댓글 입력창이 보이지 않으면 위의 ‘GitHub에서 열기’를 이용해주세요.</p>
+      <p id="chatStatus" role="status"></p>
+      <p class="memo-help">닉네임은 이 브라우저에만 저장됩니다. 이전 메모는 <a href="https://github.com/51win/guitar-practice/discussions/1" target="_blank" rel="noopener">GitHub Discussion</a>에서 볼 수 있습니다.</p>
     </section>
 
     <section class="drawer" id="drawer" hidden>
@@ -567,8 +563,8 @@ function score(v){let movement=previous? v.notes.reduce((sum,n)=>sum+Math.min(..
 function refresh(keep=false){candidates=voicings(current());if(!keep||!selected||!candidates.some(v=>JSON.stringify(v.notes)===JSON.stringify(selected.notes)))selected=candidates[0]||null;draw();}
 function upcoming(count=4){const bars=seq(),out=[];let i=bar,slot=chordSlot(i,beat);for(let n=0;n<count;n++){out.push(bars[i][slot]);if(++slot>=bars[i].length){slot=0;i=nextIndex(i);}}return out;}
 function fretEdges(max,width,left=0){
-  const open=width*.035,nut=left+open,weights=Array.from({length:max},(_,f)=>.55+.45*2**(-f/12)),unit=(width-open)/weights.reduce((a,b)=>a+b,0);let edge=nut;
-  return [left,nut,...weights.map(weight=>edge+=weight*unit)];
+  const weights=Array.from({length:max},(_,f)=>.55+.45*2**(-f/12)),unit=width/weights.reduce((a,b)=>a+b,0);let edge=left;
+  return [left,...weights.map(weight=>edge+=weight*unit)];
 }
 let chartSignature='';
 function draw(){const ahead=upcoming(),c=ahead[0],ss=seq(),ints=TYPES[c.type],scale=tab==='penta'?PENTATONIC[$('pentaType').value]:null;$('current').textContent=name(c);$('next').textContent=name(ahead[1]);$('third').textContent=name(ahead[2]);$('fourth').textContent=name(ahead[3]);$('notes').textContent=(tab==='triad'?ints.slice(0,3):ints).map(iv=>spell(mod(c.root+iv))).join('  ·  ');$('currentLabel').textContent=tab==='triad'?'현재 코드의 트라이어드':'현재 코드';$('nextNotes').textContent='';$('boardTitle').textContent=tab==='penta'?NAMES[+$('key').value]+' '+($('pentaType').value==='minor'?'마이너':'메이저')+' 펜타토닉':tab==='triad'?'트라이어드':tab==='solo'?'코드톤':'보이싱';$('rangeInfo').textContent=`기준 ${anchor}프렛${tab==='solo'||tab==='penta'?'':' · ±'+radius+'프렛'}`;$('legend').classList.toggle('root-only',!$('degColor').checked);$('legend').hidden=tab==='penta';
@@ -579,10 +575,11 @@ if(signature!==chartSignature){chartSignature=signature;$('chart').innerHTML=ss.
 $('chart').querySelectorAll('[data-bar]').forEach((button,i)=>{button.classList.toggle('current',i===bar);button.classList.toggle('inloop',Boolean(loopRange&&i>=loopRange[0]&&i<=loopRange[1]));button.setAttribute('aria-current',i===bar?'true':'false');button.querySelectorAll('strong').forEach((strong,j)=>strong.classList.toggle('sounding',i===bar&&j===chordSlot(bar,beat)));});updateSource();
 
 const min=0,max=Number($('endFret').value),count=max+1;
-const boardWidth=Math.max(300,$('board').clientWidth||1400),boardHeight=$('board').clientHeight||294,left=32,right=8,top=22,bottom=43,usable=boardWidth-left-right,edges=fretEdges(max,usable,left),fw=f=>edges[f+1]-edges[f],x=f=>(edges[f]+edges[f+1])/2,y=s=>top+s*(boardHeight-top-bottom)/5;
+const boardWidth=Math.max(300,$('board').clientWidth||1400),boardHeight=$('board').clientHeight||294,left=64,right=8,openX=39,top=22,bottom=43,usable=boardWidth-left-right,edges=fretEdges(max,usable,left),fw=f=>f===0?left-openX:edges[f]-edges[f-1],x=f=>f===0?openX:(edges[f-1]+edges[f])/2,y=s=>top+s*(boardHeight-top-bottom)/5;
 $('board').setAttribute('viewBox',`0 0 ${boardWidth} ${boardHeight}`);
-let svg=`<rect x="${left}" y="${top-16}" width="${usable}" height="${boardHeight-top-bottom+32}" fill="var(--panel)"/><rect x="${edges[anchor]}" y="${top-16}" width="${fw(anchor)}" height="${boardHeight-top-bottom+32}" fill="var(--accent)" opacity=".07"/>`;
-for(let f=min;f<=max+1;f++){svg+=`<line x1="${edges[f]}" y1="${top-16}" x2="${edges[f]}" y2="${y(5)+16}" stroke="var(--line)" stroke-width="${f===1?3:1}"/>`;if(f<=max){svg+=`<g data-fret="${f}" role="button" tabindex="0" aria-label="${f}프렛 기준으로 선택" aria-pressed="${f===anchor}"><rect x="${edges[f]+1}" y="${boardHeight-32}" width="${Math.max(1,fw(f)-2)}" height="30" rx="2" fill="${f===anchor?'var(--accent)':'transparent'}"/><text x="${x(f)}" y="${boardHeight-10}" fill="${f===anchor?'var(--ink)':'var(--muted)'}" text-anchor="middle" font-size="${Math.min(18,fw(f)*.68)}" font-weight="${f===anchor?700:400}" pointer-events="none">${f}</text></g>`;if([3,5,7,9,12,15,17,19,21,24].includes(f))svg+=`<circle cx="${x(f)}" cy="${(y(2)+y(3))/2}" r="4" fill="var(--line)"/>`;}}
+let svg=`<rect x="${left}" y="${top-16}" width="${usable}" height="${boardHeight-top-bottom+32}" fill="var(--panel)"/><rect x="${edges[anchor-1]}" y="${top-16}" width="${fw(anchor)}" height="${boardHeight-top-bottom+32}" fill="var(--accent)" opacity=".07"/>`;
+for(let edge=0;edge<=max;edge++)svg+=`<line x1="${edges[edge]}" y1="${top-16}" x2="${edges[edge]}" y2="${y(5)+16}" stroke="var(--line)" stroke-width="${edge===0?3:1}"/>`;
+for(let f=1;f<=max;f++){svg+=`<g data-fret="${f}" role="button" tabindex="0" aria-label="${f}프렛 기준으로 선택" aria-pressed="${f===anchor}"><rect x="${edges[f-1]+1}" y="${boardHeight-32}" width="${Math.max(1,fw(f)-2)}" height="30" rx="2" fill="${f===anchor?'var(--accent)':'transparent'}"/><text x="${x(f)}" y="${boardHeight-10}" fill="${f===anchor?'var(--ink)':'var(--muted)'}" text-anchor="middle" font-size="${Math.min(18,fw(f)*.68)}" font-weight="${f===anchor?700:400}" pointer-events="none">${f}</text></g>`;if(f===12)svg+=`<g data-inlay="12"><circle cx="${x(f)}" cy="${(y(1)+y(2))/2}" r="7" fill="#a6a69a" opacity=".62"/><circle cx="${x(f)}" cy="${(y(3)+y(4))/2}" r="7" fill="#a6a69a" opacity=".62"/></g>`;else if([3,5,7,9,15,17,19,21].includes(f))svg+=`<circle data-inlay="${f}" cx="${x(f)}" cy="${(y(2)+y(3))/2}" r="8" fill="#a6a69a" opacity=".62"/>`;}
 for(let st=0;st<6;st++)svg+=`<text x="12" y="${y(st)+6}" text-anchor="middle" fill="var(--muted)" font-size="17">${st+1}</text><line x1="${left}" y1="${y(st)}" x2="${boardWidth-right}" y2="${y(st)}" stroke="var(--string)" stroke-width="${1+st*.35}"/>`;
 let dots=new Map();if(tab==='solo'||tab==='penta'){for(let st=0;st<6;st++)for(let f=min;f<=max;f++){let iv=mod(OPEN[st]+f-(scale?+$('key').value:c.root));if((scale||ints).includes(iv))dots.set(st+':'+f,{s:st,f,iv,solid:true});else if(tab==='solo'&&$('showScale').checked&&SCALES[selectedScale()][1].includes(iv))dots.set(st+':'+f,{s:st,f,iv,solid:true,scaleNote:true});}}else{for(const [idx,v] of candidates.entries())for(const n of v.notes)dots.set(n.s+':'+n.f,{...n,solid:false,candidate:idx});if(selected)for(const n of selected.notes)dots.set(n.s+':'+n.f,{...n,solid:true,candidate:candidates.indexOf(selected)});}
 if(followsScore()){
@@ -590,7 +587,7 @@ if(followsScore()){
   for(const n of scoreNotes(scoreEvent(bar,beat)))dots.set(n.s+':'+n.f,{...n,iv:mod(OPEN[n.s]+n.f-Number($('key').value)),solid:true,guide:true});
   $('boardTitle').textContent='Silhouette · '+scoreSection(bar)[1];$('rangeInfo').textContent='작은 원: 펜타토닉 · 큰 원: 악보 운지';
 }
-for(const n of [...dots.values()].sort((a,b)=>a.solid-b.solid)){const st=dotStyle(n.iv),textRadius=Math.min(n.solid?24:19,fw(n.f)*.43),r=Math.min(textRadius*.85,(y(1)-y(0))*.46)*(n.scaleNote ? .6 : 1),label=$('labels').value==='note'?spell(mod(OPEN[n.s]+n.f)):degree(n.iv),fs=Math.min(n.scaleNote?10:15,r*1.18),dFill=n.solid?st.fill:'var(--panel)',dStroke=n.solid?st.stroke:'#969689',dSw=n.solid?st.sw:1.6,dLabel=n.solid?st.label:'var(--cream)';const action=n.candidate>=0?`data-voicing="${n.candidate}" role="button" tabindex="0" aria-label="${n.f}프렛 ${label}: 이 보이싱 위치를 기준으로 설정"`:'';svg+=`<g ${action} ${n.scaleNote?'data-scale-note="true"':''} ${n.guide?'data-score-note="'+n.s+':'+n.f+'"':''}><circle cx="${x(n.f)}" cy="${y(n.s)}" r="${r}" fill="${dFill}" stroke="${dStroke}" stroke-width="${dSw}" opacity="${n.ghost ? .22 : n.scaleNote ? .62 : n.solid ? 1 : .72}"/><text x="${x(n.f)}" y="${y(n.s)}" text-anchor="middle" dy=".35em" font-size="${fs}" font-family="Pretendard KR, sans-serif" font-weight="600" fill="${dLabel}" pointer-events="none">${label}</text></g>`;}
+for(const n of [...dots.values()].sort((a,b)=>a.solid-b.solid)){const st=dotStyle(n.iv),textRadius=Math.min(n.solid?24:19,fw(n.f)*.43),r=Math.min(textRadius*.85,(y(1)-y(0))*.46)*(n.scaleNote ? .6 : 1),label=$('labels').value==='note'?spell(mod(OPEN[n.s]+n.f)):degree(n.iv),fs=Math.min(n.scaleNote?10:15,r*1.18),dFill=n.solid?st.fill:'var(--panel)',dStroke=n.solid?st.stroke:'#969689',dSw=n.solid?st.sw:1.6,dLabel=n.solid?st.label:'var(--cream)';const action=n.candidate>=0?`data-voicing="${n.candidate}" role="button" tabindex="0" aria-label="${n.f}프렛 ${label}: 이 보이싱 위치를 기준으로 설정"`:'';svg+=`<g ${action} ${n.f===0?'data-open-string="'+(n.s+1)+'"':''} ${n.scaleNote?'data-scale-note="true"':''} ${n.guide?'data-score-note="'+n.s+':'+n.f+'"':''}><circle cx="${x(n.f)}" cy="${y(n.s)}" r="${r}" fill="${dFill}" stroke="${dStroke}" stroke-width="${dSw}" opacity="${n.ghost ? .22 : n.scaleNote ? .62 : n.solid ? 1 : .72}"/><text x="${x(n.f)}" y="${y(n.s)}" text-anchor="middle" dy=".35em" font-size="${fs}" font-family="Pretendard KR, sans-serif" font-weight="600" fill="${dLabel}" pointer-events="none">${label}</text></g>`;}
 $('board').innerHTML=svg;$('candidates').innerHTML=tab==='solo'||tab==='penta'?'':candidates.length?'<span class="muted">주변 후보</span>'+candidates.map((v,i)=>`<button class="candidate ${v===selected?'active':''}" data-candidate="${i}"><b>${['기본형','1전위','2전위','3전위'][v.inv]}</b><small>${v.label} · ${Math.min(...v.notes.map(n=>n.f))}–${Math.max(...v.notes.map(n=>n.f))}프렛</small></button>`).join('')+(emptyShapes.length?`<span class="muted">이 범위 밖 · ${emptyShapes.join(' · ')}</span>`:''):'<span class="muted">이 범위에 잡기 쉬운 모양이 없습니다. 주변 범위를 넓히거나 시작 위치를 옮겨주세요.</span>';$('hear').disabled=!selected;$('hear').hidden=tab==='solo'||tab==='penta';}
 function chooseBar(i,position=0){const resume=playing;stop();previous=selected;bar=i;beat=position;refresh();if(resume)start(false);}
 function moveChord(direction){
@@ -612,9 +609,9 @@ $('endFret').onchange=()=>{anchor=Math.min(anchor,+$('endFret').value);previous=
 $('endFret').onchange();
 function resetProgression(){stop();bar=0;beat=-1;songDefaults();previous=null;selected=null;loopRange=null;$('clearLoop').hidden=true;refresh();if($('songList').children.length)drawSongs();}
 $('song').onchange=()=>{fillKeys();resetProgression();syncSongEditor();if(hasScore())setTab('penta');};$('key').onchange=()=>{if($('song').value==='draft'){ensureDraft();persistDraft();}resetProgression();syncSongEditor();};
-function reanchor(v){if(!v)return;anchor=Math.max(0,Math.min(+$('endFret').value,Math.round(v.mid)));previous=v;candidates=voicings(current());const same=candidates.find(x=>JSON.stringify(x.notes)===JSON.stringify(v.notes));if(!same)candidates=[v,...candidates].slice(0,4);selected=same||v;draw();$('message').textContent=`${anchor}프렛을 새 기준으로 설정했습니다. 다음 코드도 이 위치 주변에서 연결합니다.`;}
+function reanchor(v){if(!v)return;anchor=Math.max(1,Math.min(+$('endFret').value,Math.round(v.mid)));previous=v;candidates=voicings(current());const same=candidates.find(x=>JSON.stringify(x.notes)===JSON.stringify(v.notes));if(!same)candidates=[v,...candidates].slice(0,4);selected=same||v;draw();$('message').textContent=`${anchor}프렛을 새 기준으로 설정했습니다. 다음 코드도 이 위치 주변에서 연결합니다.`;}
 $('candidates').onclick=e=>{const b=e.target.closest('[data-candidate]');if(b)reanchor(candidates[+b.dataset.candidate]);};
-function setAnchor(f){anchor=Math.max(0,Math.min(+$('endFret').value,Number(f)||0));previous=null;selected=null;refresh();}
+function setAnchor(f){anchor=Math.max(1,Math.min(+$('endFret').value,Number(f)||1));previous=null;selected=null;refresh();}
 function boardAction(g){if(g.hasAttribute('data-fret'))setAnchor(+g.dataset.fret);else reanchor(candidates[+g.dataset.voicing]);}
 $('board').onclick=e=>{const g=e.target.closest('[data-fret],[data-voicing]');if(g)boardAction(g);};
 $('board').addEventListener('keydown',e=>{const g=e.target.closest('[data-fret],[data-voicing]');if(!g)return;
@@ -690,7 +687,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&playing){s
 new ResizeObserver(()=>draw()).observe($('board'));
 
 // 화면 이동
-const VIEWS=['main','songs','practice','memo'],VIEWNAME={main:'홈',songs:'내 곡',practice:'연습',memo:'메모'};
+const VIEWS=['main','songs','practice','memo'],VIEWNAME={main:'홈',songs:'내 곡',practice:'연습',memo:'채팅'};
 const TABNAME={voicing:'보이싱',triad:'트라이어드',solo:'코드톤',penta:'펜타토닉'};
 let view='practice';
 function go(v){
@@ -701,6 +698,7 @@ function go(v){
   if(v!=='practice'){stop();drawer(false);}
   if(v==='songs')drawSongs();
   if(v==='practice')syncSongEditor();
+  if(v==='memo')startChat();else stopChat();
   document.title='기타 연습 · '+VIEWNAME[v];
   if(location.hash.slice(1)!==v)location.hash=v;
   scrollTo(0,0);
@@ -810,6 +808,18 @@ function deleteSong(id){
 }
 $('songSearch').oninput=drawSongs;
 $('songList').onclick=e=>{const remove=e.target.closest('[data-delete-song]');if(remove){deleteSong(remove.dataset.deleteSong);return;}const b=e.target.closest('[data-song]');if(!b)return;$('song').value=b.dataset.song;fillKeys();resetProgression();go('practice');if(hasScore())setTab('penta');};
+
+const CHAT_API='https://guitar-practice-chat-51win.netlify.app/api/chat',CHAT_NAME='guitar-chat-name-v1',CHAT_CLIENT='guitar-chat-client-v1';
+let chatTimer=null,chatSignature=null;
+function stopChat(){clearTimeout(chatTimer);chatTimer=null;}
+function chatClient(){try{let id=localStorage.getItem(CHAT_CLIENT);if(!id){id=crypto.randomUUID();localStorage.setItem(CHAT_CLIENT,id);}return id;}catch{return crypto.randomUUID();}}
+let clientId='';
+function chatTime(value){try{return new Intl.DateTimeFormat('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value));}catch{return'';}}
+function renderChat(messages){const list=$('chatList'),nearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<80,first=chatSignature===null;list.replaceChildren();if(!messages.length){const empty=document.createElement('p');empty.className='chat-empty';empty.textContent='첫 메시지를 남겨보세요.';list.append(empty);return;}for(const item of messages){const row=document.createElement('article'),meta=document.createElement('div'),name=document.createElement('strong'),time=document.createElement('span'),text=document.createElement('p');row.className='chat-message'+(item.client===clientId?' mine':'');meta.className='chat-meta';name.textContent=item.nickname;time.textContent=chatTime(item.createdAt);text.className='chat-text';text.textContent=item.message;meta.append(name,time);row.append(meta,text);list.append(row);}if(nearBottom||first)list.scrollTop=list.scrollHeight;}
+async function loadChat(){stopChat();try{const response=await fetch(CHAT_API,{cache:'no-store'}),data=await response.json();if(!response.ok)throw Error(data.error||'메시지를 불러오지 못했습니다.');const signature=data.messages.map(x=>x.id).join(',');if(signature!==chatSignature){renderChat(data.messages);chatSignature=signature;}$('chatLive').textContent='실시간 연결';$('chatStatus').textContent='';}catch(error){$('chatLive').textContent='연결 재시도 중';$('chatStatus').textContent=error.message;}finally{if(view==='memo')chatTimer=setTimeout(loadChat,2500);}}
+function startChat(){if(!clientId)clientId=chatClient();try{$('chatName').value=localStorage.getItem(CHAT_NAME)||'';}catch{}if(!chatTimer)loadChat();}
+$('chatForm').onsubmit=async e=>{e.preventDefault();const nickname=$('chatName').value.trim(),message=$('chatMessage').value.trim();if(!nickname||!message)return;$('chatSend').disabled=true;$('chatStatus').textContent='보내는 중…';try{const response=await fetch(CHAT_API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({nickname,message,client:clientId})}),data=await response.json();if(!response.ok)throw Error(data.error||'메시지를 보내지 못했습니다.');try{localStorage.setItem(CHAT_NAME,nickname);}catch{}$('chatMessage').value='';chatSignature='';await loadChat();$('chatMessage').focus();}catch(error){$('chatStatus').textContent=error.message;}finally{$('chatSend').disabled=false;}};
+$('chatMessage').onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))$('chatForm').requestSubmit();};
 
 go(decodeURIComponent(location.hash.slice(1))||'main');
 refresh();

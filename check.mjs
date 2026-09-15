@@ -3,8 +3,11 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
+import { validateMessage } from './netlify/functions/chat.mjs';
 
 const html = fs.readFileSync(new URL('./index.html', import.meta.url), 'utf8');
+assert.ok(!html.includes('giscus.app/client.js'), '가입이 필요한 giscus를 화면에서 제거한다');
+assert.ok(html.includes('회원가입 없이 닉네임만 정하면'));
 const src = html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'));
 
 // 체크박스 상태는 여기서 조종한다
@@ -34,7 +37,7 @@ const sandbox = {
   document: { title: '', getElementById: id => (reg[id] ??= mk()), querySelectorAll: () => [], addEventListener: noop },
   window: {}, location: { hash: '' }, localStorage: new Map([['getItem', null]]),
   ResizeObserver: class { observe() {} }, Option: function (text, value) { return { text, textContent:text, value: String(value), remove(){reg.song.options=reg.song.options.filter(o=>o!==this);} }; },
-  addEventListener: noop, scrollTo: noop, setInterval: () => 0, clearInterval: noop, setTimeout: noop,
+  addEventListener: noop, scrollTo: noop, setInterval: () => 0, clearInterval: noop, setTimeout: noop, clearTimeout: noop,
   confirm: () => false, console,
 };
 const storage=new Map();
@@ -89,6 +92,9 @@ assert.deepEqual([...new Set(p.voicings(p.current()).map(v => v.shape))], ['drop
 
 // ── 4. 표시 형식 · 이스케이프 ───────────────────────────────
 assert.equal(p.esc('<img onerror="x">'), '&lt;img onerror=&quot;x&quot;&gt;');
+assert.deepEqual(validateMessage({nickname:'  재즈  기타 ',message:' 안녕\r\n반가워 ',client:'12345678-abcd'}),{nickname:'재즈 기타',message:'안녕\n반가워',client:'12345678-abcd'});
+assert.throws(()=>validateMessage({nickname:'',message:'안녕',client:'12345678'}));
+assert.throws(()=>validateMessage({nickname:'재즈',message:'x'.repeat(301),client:'12345678'}));
 
 // 도수 색은 모드를 바꾸어도 유지하고, 색을 끄면 루트만 구분한다.
 assert.deepEqual([0, 4, 7, 10].map(iv => p.dotStyle(iv).fill),
@@ -101,9 +107,13 @@ assert.deepEqual(reg.endFret.options.map(o => o.value), ['12','15','17','22']);
 p.selectAnchor(30);
 assert.ok(reg.board.innerHTML.includes('data-fret="17" role="button" tabindex="0" aria-label="17프렛 기준으로 선택" aria-pressed="true"'));
 p.selectAnchor(0);
-assert.ok(reg.board.innerHTML.includes('aria-label="0프렛 기준으로 선택" aria-pressed="true"'));
+assert.ok(reg.board.innerHTML.includes('aria-label="1프렛 기준으로 선택" aria-pressed="true"'));
+assert.ok(!reg.board.innerHTML.includes('data-fret="0"'));
+assert.equal((reg.board.innerHTML.match(/data-inlay="12"/g)||[]).length,1);
+assert.equal((reg.board.innerHTML.match(/data-inlay="12"[\s\S]*?<circle/g)||[]).length,1);
+assert.ok(reg.board.innerHTML.match(/data-inlay="12">(?:<circle[^>]+>){2}/), '12프렛 인레이는 두 점이다');
 const edges = [...p.fretEdges(22,1000)];
-assert.equal(edges.length,24);
+assert.equal(edges.length,23);
 assert.ok(Math.abs(edges.at(-1)-1000)<1e-9);
 assert.ok(edges.every((x,i)=>i===0||x>edges[i-1]));
 const firstFret=edges[2]-edges[1],secondFret=edges[3]-edges[2],lastFret=edges.at(-1)-edges.at(-2);
@@ -116,6 +126,7 @@ p.setSong('blues'); p.setKey(0);
 const shownNotes=()=>[...new Set([...reg.board.innerHTML.matchAll(/pointer-events="none">([A-G][^<]*)<\/text>/g)].map(m=>m[1]))].sort();
 p.renderPenta('major');
 assert.deepEqual(shownNotes(), ['A','C','D','E','G']);
+assert.ok(reg.board.innerHTML.includes('data-open-string="1"'), '개방현은 줄 번호 옆에 표시한다');
 p.renderPenta('minor');
 assert.deepEqual(shownNotes(), ['B♭','C','E♭','F','G']);
 p.setKey(9); p.renderPenta('minor');

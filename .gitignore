@@ -4,6 +4,12 @@
 !/index.html
 !/check.mjs
 !/README.md
+!/package.json
+!/package-lock.json
+!/netlify.toml
+!/.netlifyignore
+!/netlify/
+!/netlify/**
 !/fonts/
 /fonts/*
 !/fonts/PretendardVariable.woff2
