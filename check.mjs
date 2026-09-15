@@ -41,6 +41,7 @@ const storage=new Map();
 sandbox.localStorage = { getItem: key => storage.get(key)??null, setItem: (key,value)=>storage.set(key,value), removeItem: key=>storage.delete(key) };
 
 const ctx = vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync(new URL('./repertoire.js', import.meta.url), 'utf8'),ctx);
 vm.runInContext(src + `
 ;globalThis.probe = { seq, NAMES, KEYS, keyOf, shift, voicings, current, span, esc, parseBar, name, dotStyle, fretEdges, cleanSlots, validateSong, upcoming, editedBars, openNewSong, applyBarEdit, saveSong, putTile, selectAnchor: setAnchor,
   renderPenta(kind){ tab = 'penta'; document.getElementById('pentaType').value = kind; draw(); },
@@ -177,3 +178,81 @@ assert.equal(Object.values(JSON.parse(storage.get('guitar-songs-v1')))[0].bars[0
 vm.runInContext("slots=cleanSlots(Array(11).fill('voicing'));activeSlot=null;putTile('solo');",ctx);
 assert.ok(reg.homeMessage.textContent.includes('11칸'));
 console.log('통과 — 음악 로직 · 프렛 · 펜타토닉 · 메트로놈 · 4코드 미리보기 · 11칸/색상 · 새 곡 편집/저장');
+
+// Chord navigation preserves half-bar and quarter-bar positions, including loop boundaries.
+vm.runInContext(`playing=false;ac=null;playedAt=null;loopRange=null;bar=0;beat=0;`,ctx);
+p.setSong('blues');
+vm.runInContext(`chooseBar(3);moveChord(1);`,ctx);
+assert.equal(p.name(p.current()),'F7');
+assert.equal(vm.runInContext('bar',ctx),3);
+assert.equal(vm.runInContext('beat',ctx),2);
+vm.runInContext(`moveChord(1);moveChord(-1);`,ctx);
+assert.equal(vm.runInContext('bar',ctx),3);
+assert.equal(vm.runInContext('beat',ctx),2);
+vm.runInContext(`loopRange=[3,3];moveChord(1);`,ctx);
+assert.equal(p.name(p.current()),'Cm7');
+vm.runInContext(`moveChord(-1);`,ctx);
+assert.equal(p.name(p.current()),'F7');
+vm.runInContext(`loopRange=null;`,ctx);
+
+// Scale notes do not replace chord tones; quality defaults and local overrides remain separate.
+p.setSong('251');p.setTab('solo');
+vm.runInContext(`bar=0;beat=0;$('showScale').checked=true;draw();`,ctx);
+assert.equal(vm.runInContext('selectedScale()',ctx),'dorian');
+assert.ok(reg.board.innerHTML.includes('data-scale-note="true"'));
+const small=reg.board.innerHTML.match(/data-scale-note="true"[^>]*><circle[^>]*r="([\d.]+)"/);
+assert.ok(small&&Number(small[1])<13);
+vm.runInContext(`scaleSettings.defaults.m7='aeolian';scaleSettings.chords[scaleKey()]='melodic';`,ctx);
+assert.equal(vm.runInContext('selectedScale()',ctx),'melodic');
+vm.runInContext(`delete scaleSettings.chords[scaleKey()];`,ctx);
+assert.equal(vm.runInContext('selectedScale()',ctx),'aeolian');
+assert.deepEqual([...vm.runInContext("SCALES.phrygianDominant[1]",ctx)],[0,1,4,5,7,8,10]);
+assert.equal(p.name(p.parseBar('BmM7/A#')[0]),'BmMaj7/B♭');
+
+// All public presets parse in every key. Ten standards = two existing + eight added.
+assert.equal(vm.runInContext('STANDARD_PRESETS.length+2',ctx),10);
+for(const id of vm.runInContext('STANDARD_PRESETS.map(p=>p.id)',ctx)){
+ p.setSong(id);for(let key=0;key<12;key++){p.setKey(key);assert.ok(p.seq().flat().every(c=>Number.isInteger(c.root)&&c.root>=0&&c.root<12));}
+}
+
+// Every photographed measure is represented; 16th-note durations also cover the final slide.
+const score=JSON.parse(vm.runInContext('JSON.stringify(SILHOUETTE)',ctx));
+assert.equal(score.bars.length,178);assert.equal(score.score.length,178);
+for(let i=0;i<178;i++){
+ assert.ok(score.bars[i],`Missing chord bar ${i+1}`);
+ const events=score.score[i];assert.ok(events?.length,`Missing score bar ${i+1}`);
+ let time=0;for(const e of events){assert.equal(e.at,time,`Gap/overlap in bar ${i+1}`);time+=e.duration;assert.ok(e.duration>0);for(const n of e.notes){assert.ok(Number.isInteger(n.s)&&n.s>=0&&n.s<6);assert.ok(Number.isInteger(n.f)&&n.f>=0&&n.f<=22);}}
+ assert.equal(time,4,`Incorrect duration in bar ${i+1}`);
+}
+assert.deepEqual(score.score[0].map(e=>e.notes[0].f),[9,7,9,7,0,7,9,7]);
+assert.deepEqual(score.score[0].map(e=>e.notes[0].s),[3,3,3,2,3,3,3,3]);
+assert.equal(score.score[116][0].notes.length,0,'117마디 전체 쉼표');
+assert.equal(score.score[166].at(-1).duration,.25,'167마디 마지막 슬라이드');
+assert.equal(score.score[171][0].tie,true,'172마디는 171마디에서 붙임줄');
+p.setSong('silhouette');p.setTab('penta');reg.pentaType.value='minor';
+vm.runInContext(`bar=0;beat=0;draw();`,ctx);
+assert.ok(reg.board.innerHTML.includes('data-score-note="3:9"'));
+vm.runInContext(`bar=116;beat=2;draw();`,ctx);
+assert.ok(!reg.board.innerHTML.includes('data-score-note='),'쉼표에서 큰 운지 원이 사라져야 함');
+vm.runInContext(`bar=166;beat=3.75;draw();`,ctx);
+assert.ok(reg.board.innerHTML.includes('data-score-note="0:17"'));
+
+// Scheduler advances at the score's eighth notes while the metronome remains on four beats.
+vm.runInContext(`globalThis.scheduledGuide=[];note=(kind,midi,t,volume,duration)=>scheduledGuide.push({midi,t,duration});
+metroBeats=[false,true,false,true];clickTimes=[];$('bpm').value=120;$('metroOnly').checked=true;
+$('scoreAudio').checked=true;bar=0;beat=0;playing=true;scoreFinished=false;resumeGuide=true;scheduleBar=0;scheduleBeat=0;countLeft=0;nextTime=0;queue=[];ac={currentTime:0};
+for(let n=0;n<16;n++){ac.currentTime=n*.125;scheduler();}playing=false;`,ctx);
+assert.deepEqual([...sandbox.scheduledGuide].map(e=>e.midi),[59,57,59,62,50,57,59,57]);
+assert.deepEqual([...sandbox.clickTimes],[.5,1.5]);
+vm.runInContext(`playing=false;ac=null;`,ctx);
+console.log('통과 — 코드 단위 이동 · 코드별 스케일 · 스탠다드 10곡 · 실루엣 178마디/운지/16분음표/쉼표/메트로놈');
+// The complete score ends once; a selected last-bar loop stays in that bar.
+vm.runInContext(`ac={currentTime:0};playing=true;scoreFinished=false;resumeGuide=false;loopRange=null;scheduleBar=177;scheduleBeat=3.75;nextTime=0;queue=[];countLeft=0;bar=177;beat=3.5;scheduler();ac.currentTime=.13;scheduler();`,ctx);
+assert.equal(vm.runInContext('playing',ctx),false);
+assert.equal(reg.playStatus.textContent,'곡 끝');
+vm.runInContext(`ac={currentTime:0};playing=true;scoreFinished=false;loopRange=[177,177];scheduleBar=177;scheduleBeat=3.75;nextTime=0;queue=[];countLeft=0;bar=177;beat=3.5;scheduler();ac.currentTime=.13;scheduler();`,ctx);
+assert.equal(vm.runInContext('playing',ctx),true);
+assert.equal(vm.runInContext('bar',ctx),177);
+assert.equal(vm.runInContext('scoreFinished',ctx),false);
+vm.runInContext(`playing=false;ac=null;loopRange=null;`,ctx);
+console.log('통과 — 실루엣 곡 끝 정지 · 마지막 마디 반복');
