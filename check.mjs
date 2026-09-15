@@ -8,6 +8,7 @@ import { validateMessage } from './netlify/functions/chat.mjs';
 const html = fs.readFileSync(new URL('./index.html', import.meta.url), 'utf8');
 assert.ok(!html.includes('giscus.app/client.js'), '가입이 필요한 giscus를 화면에서 제거한다');
 assert.ok(html.includes('회원가입 없이 닉네임만 정하면'));
+assert.ok(html.includes('반주 끄기'));
 const src = html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>'));
 
 // 체크박스 상태는 여기서 조종한다
@@ -271,10 +272,13 @@ assert.equal(samurai.bars.length,61);assert.equal(samurai.score.length,61);
 for(let i=0;i<61;i++){
  assert.ok(samurai.bars[i],`Missing Samurai Heart chord bar ${i+1}`);
  const events=samurai.score[i];assert.ok(events?.length,`Missing Samurai Heart score bar ${i+1}`);
- let time=0;for(const e of events){assert.equal(e.at,time,`Samurai Heart gap/overlap in bar ${i+1}`);time+=e.duration;assert.ok(e.duration>0);for(const n of e.notes){assert.ok(Number.isInteger(n.s)&&n.s>=0&&n.s<6);assert.ok(Number.isInteger(n.f)&&n.f>=0&&n.f<=22);}}
+ let time=0;for(const e of events){assert.equal(e.at,time,`Samurai Heart gap/overlap in bar ${i+1}`);assert.equal(e.at*4,Math.round(e.at*4),`Samurai Heart event off 16th grid in bar ${i+1}`);time+=e.duration;assert.ok(e.duration>0);for(const n of e.notes){assert.ok(Number.isInteger(n.s)&&n.s>=0&&n.s<6);assert.ok(Number.isInteger(n.f)&&n.f>=0&&n.f<=22);}}
  assert.equal(time,4,`Incorrect Samurai Heart duration in bar ${i+1}`);
 }
 assert.equal(samurai.sections.at(-1)[0],61);
+assert.deepEqual(samurai.score[0].flatMap(e=>e.notes.map(n=>`${n.s}:${n.f}`)),['0:9','0:8','1:8','1:10','1:8','1:7','1:8']);
+assert.deepEqual(samurai.score[54].flatMap(e=>e.notes.map(n=>n.f)),[12,8,10,15,8,10,13,8,10,12,8,10,12,13,12,8]);
+assert.deepEqual(samurai.score[60][0].notes,[{s:0,f:11}]);
 p.setSong('silhouette');p.setTab('penta');reg.pentaType.value='minor';
 vm.runInContext(`bar=0;beat=0;draw();`,ctx);
 assert.ok(reg.board.innerHTML.includes('data-score-note="3:9"'));
@@ -289,10 +293,16 @@ assert.equal(reg.songTimeline.hidden,false);assert.equal(reg.chart.hidden,true);
 assert.equal(reg.songSeek.max,'711.75');assert.ok(reg.songTime.textContent.endsWith('/ 3:53'));
 p.seekScore(366);assert.equal(vm.runInContext('bar',ctx),91);assert.equal(vm.runInContext('beat',ctx),2);
 p.setSong('samurai-heart');p.setTab('penta');reg.pentaType.value='minor';reg.bpm.value='113';
-vm.runInContext(`bar=0;beat=0;draw();`,ctx);
-assert.ok(reg.board.innerHTML.includes('data-score-note="1:9"'));
+vm.runInContext(`bar=0;beat=.5;draw();`,ctx);
+assert.ok(reg.board.innerHTML.includes('data-score-note="0:9"'));
+assert.ok(reg.board.innerHTML.includes('data-next-note="0:8"'),'다음 한 박자 안의 운지는 점선 원으로 미리 보인다');
+assert.equal(reg.currentLabel.textContent,'현재 마디');assert.equal(reg.current.textContent,'01');assert.equal(reg.next.textContent,'02');
 assert.equal(reg.boardTitle.textContent,'Samurai Heart · Intro');
 assert.equal(reg.songSeek.max,'243.75');assert.ok(reg.songTime.textContent.endsWith('/ 2:10'));
+vm.runInContext(`previousScoreSong='';songDefaults();`,ctx);
+assert.equal(reg.metroOnly.checked,true,'사무라이 하트는 코드 반주가 기본으로 꺼진다');
+p.setSong('silhouette');vm.runInContext(`songDefaults();`,ctx);
+assert.equal(reg.metroOnly.checked,false,'실루엣은 기존 코드 반주 기본값을 유지한다');
 p.setSong('blues');p.syncTimeline();assert.equal(reg.songTimeline.hidden,true);assert.equal(reg.chart.hidden,false);
 p.setSong('silhouette');
 

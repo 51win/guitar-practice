@@ -345,19 +345,19 @@ option{background:#252524;color:var(--cream)}
             <div class="chord-notes" id="notes"></div>
           </div>
           <div class="cg-col">
-            <div class="eyebrow">다음</div>
+            <div class="eyebrow" id="nextLabel">다음</div>
             <div class="next" id="next"></div>
             <div class="chord-notes" id="nextNotes"></div>
           </div>
-          <div class="cg-col"><div class="eyebrow">다다음</div><div class="later" id="third"></div><div></div></div>
-          <div class="cg-col"><div class="eyebrow">그다음</div><div class="later last" id="fourth"></div><div></div></div>
+          <div class="cg-col"><div class="eyebrow" id="thirdLabel">다다음</div><div class="later" id="third"></div><div></div></div>
+          <div class="cg-col"><div class="eyebrow" id="fourthLabel">그다음</div><div class="later last" id="fourth"></div><div></div></div>
         </div>
         <div class="pos">
           <div class="metro-heading"><span>메트로놈</span></div>
           <div class="beatrow" id="beats" role="group" aria-label="메트로놈 소리 낼 박자">
             <button class="beat" data-beat="0" aria-label="1박 메트로놈" aria-pressed="true">1</button><button class="beat" data-beat="1" aria-label="2박 메트로놈" aria-pressed="true">2</button><button class="beat" data-beat="2" aria-label="3박 메트로놈" aria-pressed="true">3</button><button class="beat" data-beat="3" aria-label="4박 메트로놈" aria-pressed="true">4</button>
           </div>
-          <label class="metro-only"><input type="checkbox" id="metroOnly">메트로놈만</label>
+          <label class="metro-only"><input type="checkbox" id="metroOnly">반주 끄기</label>
           <div class="muted" id="playStatus" aria-live="off">정지</div>
         </div>
       </div>
@@ -458,7 +458,7 @@ option{background:#252524;color:var(--cream)}
     <div class="dialog-actions"><button class="pill" id="deleteBar" type="button">마디 삭제</button><button class="pill" id="cancelBar" type="button">취소</button><button class="pill is-primary" type="submit">적용</button></div>
   </form>
 </dialog>
-<script src="repertoire.js?v=20260916"></script>
+<script src="repertoire.js?v=20260916b"></script>
 <script>
 
 'use strict';
@@ -499,9 +499,9 @@ const KEYS={blues:'F',blues156:'F',fly:'C',autumn:'Gm','251':'C',minor:'Cm','162
 for(const item of STANDARD_PRESETS){SONGS[item.id]=item.bars.split('|');KEYS[item.id]=item.key;SOURCES[item.id]=[item.source,item.url,item.note];$('song').add(new Option(item.title+' · '+item.key,item.id));}
 SONGS.silhouette=SILHOUETTE.bars;KEYS.silhouette='Bm';
 SONGS['samurai-heart']=SAMURAI_HEART.bars;KEYS['samurai-heart']='Cm';
-const SCORES={silhouette:{...SILHOUETTE,title:'Silhouette',bpm:183,penta:'minor'},'samurai-heart':{...SAMURAI_HEART,title:'Samurai Heart',bpm:113,penta:'minor'}};
+const SCORES={silhouette:{...SILHOUETTE,title:'Silhouette',bpm:183,penta:'minor',backing:true},'samurai-heart':{...SAMURAI_HEART,title:'Samurai Heart',bpm:113,penta:'minor',backing:false}};
 SOURCES.silhouette=['사용자 제공 · Grab the Guitar 고화질 악보 6장','https://www.grabtheguitar.com/','KANA-BOON · Silhouette · 183 BPM · 178마디. 고화질 PDF로 줄·프렛과 음 길이를 다시 대조했습니다. 펜타토닉의 악보 따라가기에서 원래 운지를 표시하며, 스케일 밖의 음도 그대로 연주합니다.'];
-SOURCES['samurai-heart']=['사용자 제공 · 기타 TAB 3장','https://www.spyair.net/','SPYAIR · Samurai Heart (Some Like It Hot!!) · 113 BPM · 61마디. TAB의 유효음을 지판 재생용으로 정리했으며 뮤트 스트로크는 운지 표시에서 생략했습니다.'];
+SOURCES['samurai-heart']=['사용자 제공 · 기타 TAB 3장','https://www.spyair.net/','SPYAIR · Samurai Heart (Some Like It Hot!!) · 113 BPM · 61마디. PDF의 탭 숫자를 6개 줄별로 다시 대조했으며 뮤트 스트로크는 쉼표로 표시합니다. 코드 반주는 기본으로 꺼집니다.'];
 $('song').add(new Option('Silhouette · KANA-BOON','silhouette'));
 $('song').add(new Option('Samurai Heart (Some Like It Hot!!) · SPYAIR','samurai-heart'));
 function keyOf(id){const s=KEYS[id]||'C';return{root:Math.max(0,NAMES.indexOf(s.replace(/m$/,''))),minor:/m$/.test(s)};}
@@ -552,6 +552,7 @@ function scoreData(id=$('song').value){return SCORES[id]||null;}
 function hasScore(){return Boolean(scoreData());}
 function followsScore(){return hasScore()&&tab==='penta'&&$('followScore').checked;}
 function scoreEvent(i,b){const events=scoreData()?.score[i];return events?.find(e=>e.at<=Math.max(0,b)&&e.at+e.duration>Math.max(0,b))||null;}
+function nextScoreEvent(i,b,within=1){const data=scoreData(),now=i*4+Math.max(0,b),limit=now+within;if(!data)return null;for(let barIndex=i;barIndex<data.score.length;barIndex++)for(const event of data.score[barIndex]||[]){const position=barIndex*4+event.at;if(position>now&&position<=limit&&event.notes.length)return event;}return null;}
 function scoreNotes(event){if(!event)return [];const delta=Number($('key').value)-keyOf($('song').value).root;return event.notes.map(n=>{let f=n.f+delta;while(f<0)f+=12;while(f>22)f-=12;return {...n,f};});}
 function scoreSection(i){return scoreData().sections.filter(([first])=>first<=i+1).at(-1);}
 function syncScore(){
@@ -564,7 +565,7 @@ $('scoreSection').onchange=()=>chooseBar(+$('scoreSection').value);
 $('followScore').onchange=()=>{stop();refresh();};
 $('scoreAudio').onchange=()=>{if(playing){stop();start(false);}};
 let previousScoreSong='';
-function songDefaults(){const id=$('song').value,data=scoreData();if(id!==previousScoreSong){if(data){$('bpm').value=data.bpm;$('style').value='straight';$('pentaType').value=data.penta;$('endFret').value='22';}else if(SCORES[previousScoreSong]){$('bpm').value=100;$('style').value='swing';}previousScoreSong=id;}syncScore();}
+function songDefaults(){const id=$('song').value,data=scoreData();if(id!==previousScoreSong){if(data){$('bpm').value=data.bpm;$('style').value='straight';$('pentaType').value=data.penta;$('endFret').value='22';$('metroOnly').checked=!data.backing;}else if(SCORES[previousScoreSong]){$('bpm').value=100;$('style').value='swing';$('metroOnly').checked=false;}previousScoreSong=id;}syncScore();}
 function formatTime(seconds){const whole=Math.max(0,Math.round(seconds));return Math.floor(whole/60)+':'+String(whole%60).padStart(2,'0');}
 function updateTimelineTime(position=Number($('songSeek').value)){const spb=60/tempo();$('songTime').textContent=`${formatTime(position*spb)} / ${formatTime(seq().length*4*spb)}`;}
 function syncTimeline(){const on=hasScore();$('songTimeline').hidden=!on;$('chartTools').hidden=on;$('chart').hidden=on;$('loop').hidden=on;$('clearLoop').hidden=on||!loopRange;if(!on)return;const position=bar*4+Math.max(0,beat);$('songSeek').max=String(seq().length*4-.25);$('songSeek').value=String(Math.min(Number($('songSeek').max),position));updateTimelineTime();}
@@ -616,7 +617,11 @@ function currentPentaShape(max){
   return choices[0]?.notes||new Set();
 }
 let chartSignature='';
-function draw(){const ahead=upcoming(),c=ahead[0],ss=seq(),ints=TYPES[c.type],scale=tab==='penta'?PENTATONIC[$('pentaType').value]:null;$('current').textContent=name(c);$('next').textContent=name(ahead[1]);$('third').textContent=name(ahead[2]);$('fourth').textContent=name(ahead[3]);$('notes').textContent=(tab==='triad'?ints.slice(0,3):ints).map(iv=>spell(mod(c.root+iv))).join('  ·  ');$('currentLabel').textContent=tab==='triad'?'현재 코드의 트라이어드':'현재 코드';$('nextNotes').textContent='';$('boardTitle').textContent=tab==='penta'?NAMES[+$('key').value]+' '+($('pentaType').value==='minor'?'마이너':'메이저')+' 펜타토닉':tab==='triad'?'트라이어드':tab==='solo'?'코드톤':'보이싱';$('rangeInfo').textContent=`기준 ${anchor}프렛${tab==='solo'||tab==='penta'?'':' · ±'+radius+'프렛'}`;$('legend').classList.toggle('root-only',!$('degColor').checked);$('legend').hidden=tab==='penta';$('pentaLegend').hidden=tab!=='penta';$('pentaLegend').classList.toggle('root-only',!$('degColor').checked);
+function draw(){
+const ahead=upcoming(),c=ahead[0],ss=seq(),ints=TYPES[c.type],scale=tab==='penta'?PENTATONIC[$('pentaType').value]:null,guideOnly=scoreData()?.backing===false;
+if(guideOnly){const measure=n=>bar+n<=ss.length?String(bar+n).padStart(2,'0'):'—';$('current').textContent=measure(1);$('next').textContent=measure(2);$('third').textContent=measure(3);$('fourth').textContent=measure(4);$('notes').textContent=scoreSection(bar)[1];$('currentLabel').textContent='현재 마디';$('nextLabel').textContent='다음 마디';$('thirdLabel').textContent='다다음';$('fourthLabel').textContent='그다음';}
+else{$('current').textContent=name(c);$('next').textContent=name(ahead[1]);$('third').textContent=name(ahead[2]);$('fourth').textContent=name(ahead[3]);$('notes').textContent=(tab==='triad'?ints.slice(0,3):ints).map(iv=>spell(mod(c.root+iv))).join('  ·  ');$('currentLabel').textContent=tab==='triad'?'현재 코드의 트라이어드':'현재 코드';$('nextLabel').textContent='다음';$('thirdLabel').textContent='다다음';$('fourthLabel').textContent='그다음';}
+$('nextNotes').textContent='';$('boardTitle').textContent=tab==='penta'?NAMES[+$('key').value]+' '+($('pentaType').value==='minor'?'마이너':'메이저')+' 펜타토닉':tab==='triad'?'트라이어드':tab==='solo'?'코드톤':'보이싱';$('rangeInfo').textContent=`기준 ${anchor}프렛${tab==='solo'||tab==='penta'?'':' · ±'+radius+'프렛'}`;$('legend').classList.toggle('root-only',!$('degColor').checked);$('legend').hidden=tab==='penta';$('pentaLegend').hidden=tab!=='penta';$('pentaLegend').classList.toggle('root-only',!$('degColor').checked);
 // Preserve bar nodes while moving through a progression so double-click and keyboard focus survive.
 syncScale();syncScore();
 const signature=JSON.stringify(ss);
@@ -634,12 +639,13 @@ const pentaShape=tab==='penta'?currentPentaShape(max):null;
 let dots=new Map();if(tab==='solo'||tab==='penta'){for(let st=0;st<6;st++)for(let f=min;f<=max;f++){let iv=mod(OPEN[st]+f-(scale?+$('key').value:c.root));if((scale||ints).includes(iv))dots.set(st+':'+f,{s:st,f,iv,inShape:pentaShape?.has(st+':'+f),solid:true});else if(tab==='solo'&&$('showScale').checked&&SCALES[selectedScale()][1].includes(iv))dots.set(st+':'+f,{s:st,f,iv,solid:true,scaleNote:true});}}else{for(const [idx,v] of candidates.entries())for(const n of v.notes)dots.set(n.s+':'+n.f,{...n,solid:false,candidate:idx});if(selected)for(const n of selected.notes)dots.set(n.s+':'+n.f,{...n,solid:true,candidate:candidates.indexOf(selected)});}
 if(followsScore()){
   for(const n of dots.values()){n.scaleNote=true;n.ghost=!n.inShape;}
-  const currentNotes=scoreNotes(scoreEvent(bar,beat)),currentKeys=new Set(currentNotes.map(n=>n.s+':'+n.f));
+  const currentNotes=scoreNotes(scoreEvent(bar,beat)),currentKeys=new Set(currentNotes.map(n=>n.s+':'+n.f)),nextNotes=scoreNotes(nextScoreEvent(bar,beat));
   for(const n of previousGuide)if(!currentKeys.has(n.s+':'+n.f))dots.set(n.s+':'+n.f,{...n,iv:mod(OPEN[n.s]+n.f-Number($('key').value)),solid:true,trail:true});
+  for(const n of nextNotes)if(!currentKeys.has(n.s+':'+n.f))dots.set(n.s+':'+n.f,{...n,iv:mod(OPEN[n.s]+n.f-Number($('key').value)),solid:true,preview:true});
   for(const n of currentNotes)dots.set(n.s+':'+n.f,{...n,iv:mod(OPEN[n.s]+n.f-Number($('key').value)),solid:true,guide:true});
-  $('boardTitle').textContent=scoreData().title+' · '+scoreSection(bar)[1];$('rangeInfo').textContent='작은 원: 펜타토닉 · 연한 원: 직전 운지 · 큰 원: 현재 운지';
+  $('boardTitle').textContent=scoreData().title+' · '+scoreSection(bar)[1];$('rangeInfo').textContent='작은 원: 펜타토닉 · 연한 원: 직전 · 점선 원: 다음 · 큰 원: 현재';
 }
-for(const n of [...dots.values()].sort((a,b)=>(a.trail?0:1)-(b.trail?0:1)||a.solid-b.solid)){const outsidePenta=tab==='penta'&&!n.inShape&&!n.guide&&!n.trail,shapeTone=tab==='penta'&&n.inShape&&!n.guide&&!n.trail,st=tab==='penta'?pentaStyle(n.iv):dotStyle(n.iv),textRadius=Math.min(n.solid?24:19,fw(n.f)*.43),r=outsidePenta?5:Math.min(textRadius*.85,(y(1)-y(0))*.46)*(n.scaleNote ? .6 : n.trail ? .82 : 1),label=outsidePenta?'':$('labels').value==='note'?spell(mod(OPEN[n.s]+n.f)):degree(n.iv),fs=Math.min(n.scaleNote?10:15,r*1.18),dFill=outsidePenta?'transparent':n.trail?'var(--cream)':n.solid?st.fill:'var(--panel)',dStroke=outsidePenta?'#8a8a80':n.trail?'var(--cream)':n.solid?st.stroke:'#969689',dSw=outsidePenta?1.4:n.trail?1:n.solid?st.sw:1.6,dLabel=n.trail?'var(--ink)':n.solid?st.label:'var(--cream)';const action=n.candidate>=0?`data-voicing="${n.candidate}" role="button" tabindex="0" aria-label="${n.f}프렛 ${label}: 이 보이싱 위치를 기준으로 설정"`:'';svg+=`<g ${action} ${n.f===0?'data-open-string="'+(n.s+1)+'"':''} ${n.scaleNote?'data-scale-note="true"':''} ${n.guide?'data-score-note="'+n.s+':'+n.f+'"':''} ${n.trail?'data-previous-note="'+n.s+':'+n.f+'"':''} ${outsidePenta?'data-penta-other="true"':''} ${shapeTone?'data-penta-shape="true"':''}><circle cx="${x(n.f)}" cy="${y(n.s)}" r="${r}" fill="${dFill}" stroke="${dStroke}" stroke-width="${dSw}" opacity="${outsidePenta ? .62 : n.trail ? .2 : n.ghost ? .22 : shapeTone ? .62 : n.scaleNote ? .62 : n.solid ? 1 : .72}"/>${label?`<text x="${x(n.f)}" y="${y(n.s)}" text-anchor="middle" dy=".35em" font-size="${fs}" font-family="Pretendard KR, sans-serif" font-weight="600" fill="${dLabel}" pointer-events="none">${label}</text>`:''}</g>`;}
+for(const n of [...dots.values()].sort((a,b)=>(a.trail?0:1)-(b.trail?0:1)||a.solid-b.solid)){const outsidePenta=tab==='penta'&&!n.inShape&&!n.guide&&!n.trail&&!n.preview,shapeTone=tab==='penta'&&n.inShape&&!n.guide&&!n.trail&&!n.preview,st=tab==='penta'?pentaStyle(n.iv):dotStyle(n.iv),textRadius=Math.min(n.solid?24:19,fw(n.f)*.43),r=outsidePenta?5:Math.min(textRadius*.85,(y(1)-y(0))*.46)*(n.scaleNote ? .6 : n.preview ? .74 : n.trail ? .82 : 1),label=outsidePenta||n.preview?'':$('labels').value==='note'?spell(mod(OPEN[n.s]+n.f)):degree(n.iv),fs=Math.min(n.scaleNote?10:15,r*1.18),dFill=outsidePenta||n.preview?'transparent':n.trail?'var(--cream)':n.solid?st.fill:'var(--panel)',dStroke=outsidePenta?'#8a8a80':n.preview?'var(--cream)':n.trail?'var(--cream)':n.solid?st.stroke:'#969689',dSw=outsidePenta?1.4:n.preview?1.8:n.trail?1:n.solid?st.sw:1.6,dLabel=n.trail?'var(--ink)':n.solid?st.label:'var(--cream)';const action=n.candidate>=0?`data-voicing="${n.candidate}" role="button" tabindex="0" aria-label="${n.f}프렛 ${label}: 이 보이싱 위치를 기준으로 설정"`:'';svg+=`<g ${action} ${n.f===0?'data-open-string="'+(n.s+1)+'"':''} ${n.scaleNote?'data-scale-note="true"':''} ${n.guide?'data-score-note="'+n.s+':'+n.f+'"':''} ${n.trail?'data-previous-note="'+n.s+':'+n.f+'"':''} ${n.preview?'data-next-note="'+n.s+':'+n.f+'"':''} ${outsidePenta?'data-penta-other="true"':''} ${shapeTone?'data-penta-shape="true"':''}><circle cx="${x(n.f)}" cy="${y(n.s)}" r="${r}" fill="${dFill}" stroke="${dStroke}" stroke-width="${dSw}" ${n.preview?'stroke-dasharray="4 3"':''} opacity="${outsidePenta ? .62 : n.preview ? .72 : n.trail ? .2 : n.ghost ? .22 : shapeTone ? .62 : n.scaleNote ? .62 : n.solid ? 1 : .72}"/>${label?`<text x="${x(n.f)}" y="${y(n.s)}" text-anchor="middle" dy=".35em" font-size="${fs}" font-family="Pretendard KR, sans-serif" font-weight="600" fill="${dLabel}" pointer-events="none">${label}</text>`:''}</g>`;}
 $('board').innerHTML=svg;$('candidates').innerHTML=tab==='solo'||tab==='penta'?'':candidates.length?'<span class="muted">주변 후보</span>'+candidates.map((v,i)=>`<button class="candidate ${v===selected?'active':''}" data-candidate="${i}"><b>${['기본형','1전위','2전위','3전위'][v.inv]}</b><small>${v.label} · ${Math.min(...v.notes.map(n=>n.f))}–${Math.max(...v.notes.map(n=>n.f))}프렛</small></button>`).join('')+(emptyShapes.length?`<span class="muted">이 범위 밖 · ${emptyShapes.join(' · ')}</span>`:''):'<span class="muted">이 범위에 잡기 쉬운 모양이 없습니다. 주변 범위를 넓히거나 시작 위치를 옮겨주세요.</span>';$('hear').disabled=!selected;$('hear').hidden=tab==='solo'||tab==='penta';}
 function chooseBar(i,position=0){const resume=playing;if(followsScore())previousGuide=scoreNotes(scoreEvent(bar,beat));stop();previous=selected;bar=i;beat=position;refresh();if(resume)start(false);}
 function moveChord(direction){
