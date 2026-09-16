@@ -48,6 +48,7 @@ const ctx = vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(new URL('./repertoire.js', import.meta.url), 'utf8'),ctx);
 vm.runInContext(src + `
 ;globalThis.probe = { seq, NAMES, KEYS, keyOf, shift, voicings, current, esc, parseBar, name, dotStyle, pentaStyle, fretEdges, cleanSlots, validateSong, upcoming, editedBars, openNewSong, applyBarEdit, saveSong, deleteSong, drawSongs, putTile, selectAnchor: setAnchor, selectTab: setTab, syncTimeline, seekScore, formatTime,
+  parseScoreNotes, normalizeScoreEvents, cleanImportedScoreEdits, scoreData, shiftScoreDuration,
   renderPenta(kind){ tab = 'penta'; document.getElementById('pentaType').value = kind; draw(); },
   setKey(v){ document.getElementById('key').value = String(v); },
   setSong(s){ document.getElementById('song').value = s; fillKeys(); },
@@ -253,6 +254,25 @@ for(const id of vm.runInContext('STANDARD_PRESETS.map(p=>p.id)',ctx)){
 const score=JSON.parse(vm.runInContext('JSON.stringify(SILHOUETTE)',ctx));
 const samurai=JSON.parse(vm.runInContext('JSON.stringify(SAMURAI_HEART)',ctx));
 const parker=JSON.parse(vm.runInContext('JSON.stringify(PARKER_BOOK)',ctx));
+assert.deepEqual(JSON.parse(JSON.stringify(p.parseScoreNotes('2:9 3:8'))),[{s:1,f:9},{s:2,f:8}]);
+assert.deepEqual(JSON.parse(JSON.stringify(p.parseScoreNotes('쉼표'))),[]);
+assert.throws(()=>p.parseScoreNotes('7:3'));
+const corrected=JSON.parse(JSON.stringify(p.normalizeScoreEvents([
+  {at:.5,duration:.25,notes:'2:9',technique:'slide',tie:false},
+  {at:1,duration:.5,notes:'3:8 4:10',technique:'none',tie:true}
+])));
+assert.deepEqual(corrected.map(e=>[e.at,e.duration,e.notes.length,e.technique,e.tie]),[[0,.5,0,'',false],[.5,.25,1,'slide',false],[.75,.25,0,'',false],[1,.5,2,'',true],[1.5,2.5,0,'',false]]);
+assert.throws(()=>p.normalizeScoreEvents([{at:0,duration:1,notes:'2:9'},{at:.5,duration:1,notes:'3:8'}]),/겹칩니다/);
+assert.throws(()=>p.cleanImportedScoreEdits({edits:{'samurai-heart':{3:[{at:0,duration:4,notes:[{s:7,f:9}]}]}}}),/운지 범위/);
+const imported=JSON.parse(JSON.stringify(p.cleanImportedScoreEdits({version:1,edits:{'samurai-heart':{3:[{at:0,duration:.25,notes:[{s:1,f:9}],technique:'bend',tie:false}]},unknown:{0:[]}}})));
+assert.deepEqual(imported['samurai-heart'][3].map(e=>[e.at,e.duration,e.notes.length]),[[0,.25,1],[.25,3.75,0]]);
+assert.equal(imported.unknown,undefined);
+p.setSong('samurai-heart');p.setTab('penta');vm.runInContext('scoreEdits={};bar=3;beat=.5;',ctx);
+const shifted=JSON.parse(JSON.stringify(p.shiftScoreDuration('samurai-heart',3,.5,.5)));
+assert.deepEqual(shifted[3].slice(0,5).map(e=>[e.at,e.duration,e.notes[0]?.f??null]),[[0,.5,null],[.5,.5,9],[1,.25,null],[1.25,.25,8],[1.5,.25,8]],'길이를 늘리면 뒤 음이 순서대로 밀린다');
+assert.ok(shifted.every(events=>events.reduce((sum,e)=>sum+e.duration,0)===4),'길이 변경 뒤에도 모든 마디는 4박이다');
+assert.ok(storage.get('guitar-score-edits-v1'),'간편 리듬 수정은 브라우저에 즉시 저장한다');
+vm.runInContext("scoreEdits={};localStorage.removeItem(SCORE_EDIT_KEY);",ctx);
 assert.equal(parker.length,19);
 assert.equal(parker[0].start,18);assert.equal(parker.at(-1).end,102);
 assert.ok(parker.every((item,i)=>i===0||item.start===parker[i-1].end+1),'PDF 악보 범위가 18–102쪽을 빠짐없이 잇는다');
