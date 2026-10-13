@@ -2,7 +2,7 @@
 <html lang="ko"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light">
 <title>기타 연습 · 홈</title>
 <style>
 @font-face{
@@ -238,28 +238,37 @@ option{background:#252524;color:var(--cream)}
 #scaleChoice{max-width:270px}
 @media(max-width:1200px){.main-control{min-height:60px;padding:8px 12px}.main-control input[type=number],.main-control select{font-size:24px;width:82px}.scale-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
+<link rel="stylesheet" href="jazz-week.css">
+<link rel="stylesheet" href="notebook.css">
 </head>
 <body>
 <div class="app">
 
-  <nav class="rail" aria-label="화면 이동">
+  <aside class="rail" aria-label="연습 노트 목록">
     <a class="brand" href="#main" aria-label="기타 연습 홈">기타 연습<span aria-hidden="true">.</span></a>
-    <div class="rail-menu">
+    <nav class="rail-menu" aria-label="화면 이동">
       <button class="rail-btn" data-screen="main" title="홈" aria-label="홈">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg><span>홈</span></button>
       <button class="rail-btn" data-screen="songs" title="내 곡" aria-label="내 곡">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>내 곡</span></button>
       <button class="rail-btn is-on" data-screen="practice" aria-current="page" title="연습" aria-label="연습">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v16M10 4v16M15 4v16M20 4v16"/></svg><span>연습</span></button>
+      <button class="rail-btn" data-screen="week" title="7일 플랜" aria-label="7일 플랜"><span>7일 플랜</span></button>
       <button class="rail-btn" data-screen="memo" title="채팅" aria-label="공용 채팅">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h5"/></svg><span>채팅</span></button>
-    </div>
-  </nav>
+    </nav>
+    <div class="library-heading"><span>내 라이브러리</span><button id="sidebarNewSong" aria-label="새 곡 추가" title="새 곡 추가">＋</button></div>
+    <input id="librarySearch" type="search" placeholder="곡 검색…" aria-label="라이브러리 곡 검색" autocomplete="off">
+    <nav id="libraryList" aria-label="곡 목록"></nav>
+    <p class="sidebar-foot">한 곡씩, 차곡차곡.</p>
+  </aside>
 
   <main class="work">
+    <div class="page-topbar"><span>기타 연습 <span aria-hidden="true">/</span> <span id="pageLocation">연습 노트</span></span><span>나의 음악 노트</span></div>
 
     <section class="panel" id="scr-main" hidden>
-      <div class="panel-head"><h1 class="scr-title">홈</h1><button class="pill" id="homeSettings" aria-expanded="false" aria-controls="homeEditor">개인 설정</button></div>
+      <div class="panel-head"><h1 class="scr-title">연습 노트</h1><button class="pill" id="homeSettings" aria-expanded="false" aria-controls="homeEditor">개인 설정</button></div>
+      <a class="jw-home-link" href="#week"><strong>하루 30분 · 7일 재즈 기타 플랜 ↗</strong><small>09.28 MON — 10.04 SUN</small></a>
       <div class="home-layout" id="homeLayout">
         <aside id="homeEditor" hidden aria-label="홈 구성 설정">
           <p class="scr-lead" id="slotHint">바꿀 칸을 고른 뒤 항목을 선택하세요.</p>
@@ -282,7 +291,16 @@ option{background:#252524;color:var(--cream)}
       <button id="newSong">＋ 새 곡</button>
     </section>
 
+    <section class="panel" id="scr-week" hidden>
+      <div class="jw-intro"><div><h1 class="scr-title">하루 30분, 재즈 기타.</h1><p class="scr-lead">2026.09.28 월 — 10.04 일 · 가이드톤에서 나만의 라인까지</p></div><div class="jw-progress"><span id="jw-progress">0 / 28 단계 완료</span><progress id="jw-meter" max="28" value="0" aria-label="주간 완료 단계"></progress></div></div>
+      <nav id="jw-days" class="jw-days" aria-label="연습 날짜 선택"></nav>
+      <div class="jw-hero"><div class="jw-heading"><span id="jw-date" class="tile-kicker"></span><h2 id="jw-title"></h2><p id="jw-focus"></p></div><div class="jw-timer"><small id="jw-timer-label"></small><output id="jw-time" class="jw-clock" role="timer" aria-live="off">05:00</output><div class="rows"><button class="pill is-primary" id="jw-start">시작</button><button class="pill" id="jw-reset">시간 초기화</button><button class="pill" id="jw-next">다음 단계 →</button></div></div></div>
+      <p id="jw-status" role="status"></p>
+      <div class="jw-body"><div id="jw-steps" class="jw-steps" aria-label="30분 상세 루틴"></div><aside class="jw-studio" aria-label="지판 연습실"><div class="board-card"><h3>음의 위치를 보고, 연결하세요.</h3><div class="jw-controls"><label class="chip-sel jw-group"><span>진행</span><select id="jw-group" aria-label="연습할 코드 진행"></select></label></div><div id="jw-chords" aria-label="현재 코드 선택"></div><div id="jw-scale-name"></div><div class="jw-controls"><label class="chip-sel"><select id="jw-layer" aria-label="표시할 음"><option value="guide">루트 + 3·7도</option><option value="chord">코드톤까지</option><option value="scale" selected>스케일까지</option></select></label><div class="label-toggle" role="group" aria-label="주간 지판 표시 방식"><button class="pill" data-label-target="jw-labels" data-label-mode="note" aria-pressed="false">음 이름</button><button class="pill active" data-label-target="jw-labels" data-label-mode="degree" aria-pressed="true">도수</button><select id="jw-labels" hidden aria-label="주간 지판 표시 방식"><option value="note">음 이름</option><option value="degree" selected>도수</option></select></div><label class="chip-sel"><select id="jw-frets" aria-label="프렛 범위"><option value="12">0–12프렛</option><option value="17">0–17프렛</option></select></label><label class="chip-sel"><select id="jw-scale" aria-label="스케일 선택"></select></label></div><div class="legend"><span><i class="l-root"></i>루트 R</span><span><i class="l-third"></i>3도 / ♭3</span><span><i class="l-seventh"></i>7도 / ♭7</span><span><i class="l-fifth"></i>다른 코드톤</span><span><i class="jw-scale-dot"></i>스케일톤</span></div><div id="jw-board" class="jw-scroll" tabindex="0" role="region" aria-label="기타 지판 · 좌우로 스크롤"></div><p class="jw-help">위가 1번줄(가장 가는 줄)입니다. 지판을 좌우로 밀어보세요. 작은 원은 스케일톤, 큰 원은 코드톤입니다. 루트는 회색 바탕으로 표시합니다. 음 이름과 도수로 구분할 수 있습니다.</p><p id="jw-tone-list" class="jw-help"></p><p class="jw-help">코드를 바꾸면 해당 진행의 기본 스케일로 돌아갑니다. 스케일은 가능한 음 재료이며, 모든 음을 길게 머무르라는 뜻은 아닙니다.</p></div><div class="jw-notebook"><label for="jw-notes">오늘 남길 한 줄</label><textarea id="jw-notes" maxlength="3000" placeholder="막힌 코드, 기억하고 싶은 라인, 오늘의 템포…"></textarea><small id="jw-save">완료 체크와 메모는 이 브라우저에 자동 저장됩니다. 새로고침하면 타이머는 첫 단계에서 다시 시작합니다.</small></div></aside></div>
+    </section>
+
     <section class="panel" id="scr-practice" data-mode="voicing">
+      <p class="page-kicker">PRACTICE NOTES</p>
 
       <div class="panel-head">
         <div class="song-identity"><select id="song" aria-label="코드 진행">
@@ -303,6 +321,17 @@ option{background:#252524;color:var(--cream)}
         </div>
       </div>
 
+      <div class="practice-layout">
+      <div class="practice-document">
+        <div class="document-heading"><h2>코드 진행</h2><span id="documentMeta"></span></div>
+        <p class="document-help">마디를 선택하면 오른쪽 지판이 함께 바뀝니다.</p>
+        <div class="chart-tools" id="chartTools"><p class="scr-lead" id="chartHint">마디를 더블클릭해 코드 수정</p><button class="pill" id="editBar">마디 편집</button><button class="pill" id="addBar" hidden>＋ 마디 추가</button></div>
+        <div class="chart" id="chart"></div>
+        <div class="song-notebook"><label for="songNotes">연습 메모</label><textarea id="songNotes" maxlength="6000" placeholder="오늘의 템포, 어려웠던 마디, 기억할 보이싱을 남겨보세요."></textarea><small id="songNotesStatus" role="status">이 곡의 메모는 브라우저에 자동 저장됩니다.</small></div>
+        <details id="source"><summary>진행 출처와 편곡 정보</summary><p><a id="sourceLink" target="_blank" rel="noopener"></a></p><p id="sourceNote"></p><p>스탠더드는 연주·편곡마다 코드가 달라집니다. 이 프리셋은 표시된 자료의 진행을 사용합니다.</p></details>
+      </div>
+      <div class="practice-studio" aria-label="기타 지판 연습실">
+      <div class="studio-heading"><h2>기타 지판</h2><span>FRETBOARD</span></div>
       <div class="rows">
         <nav class="tabs" aria-label="연습 종류">
           <button class="pill active" data-tab="voicing" aria-pressed="true">보이싱</button>
@@ -329,10 +358,7 @@ option{background:#252524;color:var(--cream)}
         <label class="chip-sel" id="radiusControl"><span>범위</span><select id="radius" aria-label="주변 범위">
           <option value="3">±3프렛</option><option value="5" selected>±5프렛</option><option value="7">±7프렛</option><option value="9">±9프렛</option>
         </select></label>
-        <label class="chip-sel"><select id="labels" aria-label="지판 원 안의 표시">
-          <option value="note">음 이름 · A B C</option><option value="degree">도수 · R 3 5 7</option>
-        </select></label>
-        <label class="chk"><input type="checkbox" id="degColor" checked><span id="degColorLabel">도수 색</span></label>
+        <label class="chk"><input type="checkbox" id="degColor"><span id="degColorLabel">도수 색</span></label>
       </div>
 
       <div id="scaleControls" hidden>
@@ -379,6 +405,11 @@ option{background:#252524;color:var(--cream)}
       <div class="card board-card">
         <div class="boardhead">
           <div><strong id="boardTitle">가까운 보이싱</strong> <span class="muted" id="rangeInfo" style="font-size:12.5px"></span></div>
+          <div class="label-toggle" role="group" aria-label="지판 표시 방식">
+            <button class="pill" data-label-target="labels" data-label-mode="note" aria-pressed="false">음 이름</button>
+            <button class="pill active" data-label-target="labels" data-label-mode="degree" aria-pressed="true">도수</button>
+            <select id="labels" hidden aria-label="지판 표시 방식"><option value="note">음 이름</option><option value="degree" selected>도수</option></select>
+          </div>
           <div class="legend" id="legend">
             <span><i class="l-root"></i>루트</span>
             <span class="deg"><i class="l-third"></i>3도</span>
@@ -394,9 +425,10 @@ option{background:#252524;color:var(--cream)}
           </div>
         </div>
         <svg id="board" viewBox="0 0 1400 325" role="group"
-          aria-label="기타 지판: 아래 프렛 번호를 클릭해 기준 위치 선택"></svg>
+          aria-label="기타 지판: 루트 R 기준 도수 또는 음 이름 표시, 프렛 번호를 클릭해 기준 위치 선택"></svg>
       </div>
 
+      <p class="degree-help">R은 루트(1도)입니다. 보이싱·트라이어드·솔로는 현재 코드, 펜타토닉은 선택한 키를 기준으로 도수를 표시합니다.</p>
       <div class="candidates" id="candidates"></div>
 
       <div class="rows transport">
@@ -414,20 +446,14 @@ option{background:#252524;color:var(--cream)}
         <output id="songTime" for="songSeek">0:00 / 3:53</output>
       </div>
 
-      <div class="chart-tools" id="chartTools"><p class="scr-lead" id="chartHint">마디를 더블클릭해 코드 수정</p><button class="pill" id="editBar">마디 편집</button><button class="pill" id="addBar" hidden>＋ 마디 추가</button></div>
-      <div class="chart" id="chart"></div>
-
-      <details id="source"><summary>진행 출처와 편곡 정보</summary>
-        <p><a id="sourceLink" target="_blank" rel="noopener"></a></p>
-        <p id="sourceNote"></p>
-        <p>스탠더드는 연주·편곡마다 코드가 달라집니다. 이 프리셋은 표시된 자료의 진행을 사용합니다.</p>
-      </details>
 
       <div class="footer">
         <span id="hint">프렛 번호 클릭 · 기준 위치 선택</span>
         <span>Space 재생 · ← → 코드 이동 · Esc 반주 설정 닫기</span>
       </div>
       <p id="message" role="status"></p>
+      </div>
+      </div>
     </section>
 
     <!-- ── 공용 채팅 ──────────────────────────────────────────── -->
@@ -511,7 +537,8 @@ option{background:#252524;color:var(--cream)}
     <button type="button" data-duration="1.5">점4분음표<br><small>1.5박</small></button><button type="button" data-duration="2">2분음표<br><small>2박</small></button><button type="button" data-duration="3">점2분음표<br><small>3박</small></button><button type="button" data-duration="4">온음표<br><small>4박</small></button>
   </div><div class="dialog-actions"><button class="pill" id="durationCancel" type="button">취소</button></div>
 </dialog>
-<script src="repertoire.js?v=20260916c"></script>
+<script src="jazz-week.js" defer></script>
+<script src="repertoire.js?v=20261013"></script>
 <script>
 
 'use strict';
@@ -538,7 +565,7 @@ const PENTA_BOXES=[
   [[10,12],[10,12],[9,12],[9,12],[10,12],[10,12]]
 ];
 let tab='voicing',bar=0,beat=-1,anchor=7,radius=5,selected=null,candidates=[],previous=null,previousGuide=[],loopRange=null,loopPick=false,loopStart=null,playing=false;
-const degreeColors={voicing:true,triad:true,solo:true,penta:false};
+const degreeColors={voicing:false,triad:false,solo:false,penta:false};
 function parse(s){
   const normalized=s.trim().replaceAll('♭','b').replaceAll('♯','#').replace('mM7','mMaj7');
   const m=normalized.match(/^([A-G])([#b]?)(maj7|mMaj7|m7b5|dim7|m7|m6|maj|dim|aug|6|7b9|7#9|7|m)?(?:\/([A-G])([#b]?))?$/);
@@ -631,10 +658,10 @@ $('songSeek').onchange=()=>seekScore($('songSeek').value);
 function degree(iv){if(tab==='penta')return({0:'R',1:'♭2',2:'2',3:'♭3',4:'3',5:'4',6:'♯4',7:'5',8:'♭6',9:'6',10:'♭7',11:'7'})[iv];return({0:'R',1:'♭2',2:'2',5:'4',3:'♭3',4:'3',6:'♭5',7:'5',8:'♯5',9:current().type==='dim7'?'𝄫7':'6',10:'♭7',11:'7'})[iv]||String(iv);}
 // 도수는 모든 연습 모드에서 같은 색을 유지한다. 루트는 외곽선으로도 구분한다.
 function dotStyle(iv){
-  const fill=iv===0?'var(--yellow)':!$('degColor').checked?'var(--cream)':iv===3||iv===4?'var(--mint)':iv===9||iv===10||iv===11?'var(--purple)':'var(--peach)';
-  return {fill,stroke:iv===0?'var(--cream)':'var(--panel)',sw:iv===0?2.5:1.5,label:'var(--ink)'};
+  const fill=iv===0?'var(--yellow)':!$('degColor').checked?'var(--panel)':iv===3||iv===4?'var(--mint)':iv===9||iv===10||iv===11?'var(--purple)':'var(--peach)';
+  return {fill,stroke:iv===0?'var(--ink)':'var(--muted)',sw:iv===0?2.5:1.5,label:'var(--ink)'};
 }
-function pentaStyle(iv){const index=PENTATONIC[$('pentaType').value].indexOf(iv),fills=['var(--yellow)','var(--mint)','var(--peach)','var(--purple)','#79a7ff'],fill=index===0?fills[0]:!$('degColor').checked||index<0?'var(--cream)':fills[index];return{fill,stroke:index===0?'var(--cream)':'var(--panel)',sw:index===0?2.5:1.5,label:'var(--ink)'};}
+function pentaStyle(iv){const index=PENTATONIC[$('pentaType').value].indexOf(iv),fills=['var(--yellow)','var(--mint)','var(--peach)','var(--purple)','#79a7ff'],fill=index===0?fills[0]:!$('degColor').checked||index<0?'var(--panel)':fills[index];return{fill,stroke:index===0?'var(--ink)':'var(--muted)',sw:index===0?2.5:1.5,label:'var(--ink)'};}
 function syncPentaLabels(){const minor=$('pentaType').value==='minor';$('pentaDegree2').textContent=minor?'♭3':'2';$('pentaDegree3').textContent=minor?'4':'3';$('pentaDegree6').textContent=minor?'♭7':'6';$('degColorLabel').textContent=tab==='penta'?(minor?'1·♭3·4·5·♭7 색':'1·2·3·5·6 색'):'도수 색';}
 const SHAPES={drop14:{label:'Drop2 1–4',strings:[3,2,1,0]},drop25:{label:'Drop2 2–5',strings:[4,3,2,1]},
 shell6:{label:'쉘 6번줄',strings:[5,3,2],roles:[0,3,1]},shell5:{label:'쉘 5번줄',strings:[4,3,2],roles:[0,1,3]}};
@@ -719,9 +746,15 @@ $('radius').onchange=recalc;
 // 체크박스는 컨테이너에서 받는다 (change 는 올라온다). 전부 끄면 지판이 비므로 마지막 하나는 되돌린다.
 for(const id of ['shapeSet','triadSet'])$(id).addEventListener('change',e=>{if(!$(id).querySelector('input:checked')){e.target.checked=true;$('message').textContent='모양은 최소 하나를 켜두어야 합니다.';return;}recalc();});
 $('pentaType').onchange=()=>{syncPentaLabels();draw();};$('labels').onchange=draw;$('degColor').onchange=()=>{degreeColors[tab]=$('degColor').checked;draw();};
+function setFretboardLabels(id,mode){
+  $(id).value=mode;
+  document.querySelectorAll(`[data-label-target="${id}"]`).forEach(b=>{const on=b.dataset.labelMode===mode;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
+  $(id).onchange();
+}
+document.querySelectorAll('[data-label-mode]').forEach(b=>b.onclick=()=>setFretboardLabels(b.dataset.labelTarget,b.dataset.labelMode));
 $('endFret').onchange=()=>{anchor=Math.min(anchor,+$('endFret').value);previous=null;selected=null;refresh();};
 $('endFret').onchange();
-function resetProgression(){stop();bar=0;beat=-1;songDefaults();previous=null;previousGuide=[];selected=null;loopRange=null;$('clearLoop').hidden=true;refresh();if($('songList').children.length)drawSongs();}
+function resetProgression(){syncNotebook();drawLibrary();stop();bar=0;beat=-1;songDefaults();previous=null;previousGuide=[];selected=null;loopRange=null;$('clearLoop').hidden=true;refresh();if($('songList').children.length)drawSongs();}
 $('song').onchange=()=>{fillKeys();resetProgression();syncSongEditor();if(hasScore())setTab('penta');};$('key').onchange=()=>{if($('song').value==='draft'){ensureDraft();persistDraft();}resetProgression();syncSongEditor();};
 function reanchor(v){if(!v)return;anchor=Math.max(1,Math.min(+$('endFret').value,Math.round(v.mid)));previous=v;candidates=voicings(current());const same=candidates.find(x=>JSON.stringify(x.notes)===JSON.stringify(v.notes));if(!same)candidates=[v,...candidates].slice(0,4);selected=same||v;draw();$('message').textContent=`${anchor}프렛을 새 기준으로 설정했습니다. 다음 코드도 이 위치 주변에서 연결합니다.`;}
 $('candidates').onclick=e=>{const b=e.target.closest('[data-candidate]');if(b)reanchor(candidates[+b.dataset.candidate]);};
@@ -801,7 +834,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&playing){s
 new ResizeObserver(()=>draw()).observe($('board'));
 
 // 화면 이동
-const VIEWS=['main','songs','practice','memo'],VIEWNAME={main:'홈',songs:'내 곡',practice:'연습',memo:'채팅'};
+const VIEWS=['main','songs','practice','memo','week'],VIEWNAME={main:'홈',songs:'내 곡',practice:'연습',memo:'채팅',week:'7일 플랜'};
 const TABNAME={voicing:'보이싱',triad:'트라이어드',solo:'코드톤',penta:'펜타토닉'};
 let view='practice';
 function go(v){
@@ -812,6 +845,8 @@ function go(v){
   if(v!=='practice'){stop();drawer(false);}
   if(v==='songs')drawSongs();
   if(v==='practice')syncSongEditor();
+  $('pageLocation').textContent=v==='practice'?songTitle($('song').value):VIEWNAME[v];
+  drawLibrary();
   if(v==='memo')startChat();else stopChat();
   document.title='기타 연습 · '+VIEWNAME[v];
   if(location.hash.slice(1)!==v)location.hash=v;
@@ -835,20 +870,21 @@ try{const saved=JSON.parse(localStorage.getItem(USER_SONGS_KEY));if(saved&&typeo
 const DRAFT_KEY='guitar-song-draft-v1';
 let draft=null,editingBar=0;
 try{const saved=JSON.parse(localStorage.getItem(DRAFT_KEY));if(saved){const valid=validateSong(saved);draft={...valid,target:typeof saved.target==='string'&&/^user-\d+$/.test(saved.target)&&Object.hasOwn(userSongs,saved.target)?saved.target:null};registerSong('draft',draft);}}catch{}
-function persistDraft(){if(!draft)return;draft.bars=[...SONGS.draft];try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));$('songSaveState').textContent='작성 중 · 임시 보관됨';}catch{$('songSaveState').textContent='임시 저장 실패 · 화면을 닫기 전에 곡을 저장하세요.';}}
-function syncSongEditor(){const on=$('song').value==='draft';$('song').hidden=on;$('editSongTitle').hidden=!on;$('saveSong').hidden=!on;$('songSaveState').hidden=!on;$('addBar').hidden=!on;if(on&&draft){$('editSongTitle').value=draft.title;$('songSaveState').textContent='작성 중';} $('chartHint').textContent=on?'마디 더블클릭 · 코드 수정 후 곡 저장':'마디 더블클릭 · 수정본을 내 곡으로 저장';}
+function persistDraft(){if(!draft)return;draft.bars=[...SONGS.draft];try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));localStorage.setItem(SONG_NOTES_KEY,JSON.stringify(songNotes));$('songSaveState').textContent='작성 중 · 임시 보관됨';}catch{$('songSaveState').textContent='임시 저장 실패 · 화면을 닫기 전에 곡을 저장하세요.';}}
+function syncSongEditor(){const on=$('song').value==='draft';$('song').hidden=on;$('editSongTitle').hidden=!on;$('saveSong').hidden=!on;$('songSaveState').hidden=!on;$('addBar').hidden=!on;syncNotebook();drawLibrary();if(on&&draft){$('editSongTitle').value=draft.title;$('songSaveState').textContent='작성 중';} $('chartHint').textContent=on?'마디 더블클릭 · 코드 수정 후 곡 저장':'마디 더블클릭 · 수정본을 내 곡으로 저장';}
 function displayedSong(){const id=$('song').value;return {title:id==='draft'?($('editSongTitle').value.trim()||draft.title):songTitle(id),key:NAMES[+$('key').value]+(keyOf(id).minor?'m':''),bars:seq().map(chords=>chords.map(name).join(' ')),target:id==='draft'?draft.target:userSongs[id]?id:null};}
-function ensureDraft(){draft=displayedSong();registerSong('draft',draft);$('song').value='draft';fillKeys();syncSongEditor();}
+function ensureDraft(){const note=songNotes[$('song').value]||'';draft=displayedSong();songNotes.draft=note;registerSong('draft',draft);$('song').value='draft';fillKeys();syncSongEditor();}
 function openNewSong(){stop();if(!draft){draft={title:'새 곡',key:'C',bars:['Cmaj7','Cmaj7','Cmaj7','Cmaj7'],target:null};registerSong('draft',draft);} $('song').value='draft';fillKeys();resetProgression();go('practice');setTab('voicing');persistDraft();$('editSongTitle').focus();$('editSongTitle').select();}
 $('newSong').onclick=openNewSong;
+$('sidebarNewSong').onclick=openNewSong;
 $('editSongTitle').oninput=()=>{if(!draft)return;draft.title=$('editSongTitle').value.trim()||'새 곡';const option=[...$('song').options].find(o=>o.value==='draft');if(option)option.textContent=draft.title;persistDraft();};
 function saveSong(){try{
   const value=displayedSong(),song=validateSong({...value,title:$('editSongTitle').value.trim()});
   const id=draft.target||'user-'+Date.now(),saved={...userSongs,[id]:song};
-  localStorage.setItem(USER_SONGS_KEY,JSON.stringify(saved));userSongs=saved;registerSong(id,song);$('song').value=id;
+  localStorage.setItem(USER_SONGS_KEY,JSON.stringify(saved));userSongs=saved;registerSong(id,song);songNotes[id]=songNotes.draft||'';delete songNotes.draft;let notesSaved=true;try{localStorage.setItem(SONG_NOTES_KEY,JSON.stringify(songNotes));}catch{notesSaved=false;} $('song').value=id;
   draft=null;delete SONGS.draft;delete KEYS.draft;[...$('song').options].find(o=>o.value==='draft')?.remove();
   try{localStorage.removeItem(DRAFT_KEY);}catch{}
-  songCatalog();drawHome();fillKeys();resetProgression();syncSongEditor();$('message').textContent='내 곡에 저장했습니다.';
+  songCatalog();drawHome();fillKeys();resetProgression();syncSongEditor();$('message').textContent=notesSaved?'내 곡에 저장했습니다.':'곡은 저장했지만 메모 저장에 실패했습니다. 메모를 복사해주세요.';
 }catch(error){$('songSaveState').textContent=error.name==='QuotaExceededError'||error.name==='SecurityError'?'저장할 수 없습니다. 작성 중인 내용은 화면에 남아 있습니다.':error.message;}}
 $('saveSong').onclick=saveSong;
 function renderBarInputs(values){const count=+$('barChordCount').value;$('barInputs').classList.toggle('single',count===1);$('barInputs').innerHTML=Array.from({length:count},(_,i)=>`<label>${count===1?'1–4박':count===2?`${i*2+1}–${i*2+2}박`:`${i+1}박`}<input data-chord-input value="${esc(values[i]||'')}" aria-label="${i+1}번째 코드" placeholder="${i?'G7':'Dm7'}" required maxlength="16" autocomplete="off"></label>`).join('');}
@@ -938,10 +974,35 @@ const catalog=new Map([
   ['penta-major',{title:'메이저 펜타토닉',display:'Penta',detail:'1 · 2 · 3 · 5 · 6',color:'autumn',mode:'penta',penta:'major'}],
   ['penta-minor',{title:'마이너 펜타토닉',display:'Penta',detail:'1 · ♭3 · 4 · 5 · ♭7',color:'autumn',mode:'penta',penta:'minor'}],
 ]);
-function songCatalog(){for(const key of [...catalog.keys()])if(key.startsWith('song:'))catalog.delete(key);for(const o of $('song').options){if(o.value==='draft')continue;catalog.set('song:'+o.value,{title:o.textContent,display:'',detail:SONGS[o.value].length+'마디 · '+KEYS[o.value],color:o.value==='autumn'?'autumn':o.value==='custom'?'custom':'fly',mode:'voicing',song:o.value});}}
+const SONG_NOTES_KEY='guitar-song-notes-v1';
+let songNotes={};
+try{const saved=JSON.parse(localStorage.getItem(SONG_NOTES_KEY));if(saved&&typeof saved==='object'&&!Array.isArray(saved))for(const [id,note] of Object.entries(saved))if(Object.hasOwn(SONGS,id)&&typeof note==='string')songNotes[id]=note.slice(0,6000);}catch{}
+function syncNotebook(){
+  const id=$('song').value;$('songNotes').value=songNotes[id]||'';
+  $('songNotesStatus').textContent='이 곡의 메모는 브라우저에 자동 저장됩니다.';
+  $('documentMeta').textContent=`${SONGS[id].length}마디 · ${KEYS[id]||'C'}`;
+  $('pageLocation').textContent=songTitle(id);
+}
+$('songNotes').oninput=()=>{
+  songNotes[$('song').value]=$('songNotes').value.slice(0,6000);
+  try{localStorage.setItem(SONG_NOTES_KEY,JSON.stringify(songNotes));$('songNotesStatus').textContent='저장됨 · 이 브라우저에서만 보입니다.';}catch{$('songNotesStatus').textContent='저장하지 못했습니다. 화면을 닫기 전에 메모를 복사해주세요.';}
+};
+function libraryGroup(id){return /^user-/.test(id)||id==='draft'?'직접 만든 곡':Object.hasOwn(SCORES,id)?'악보 연습':id==='fly'||id==='autumn'||STANDARD_PRESETS.some(p=>p.id===id)?'재즈 스탠다드':'기본 진행';}
+function drawLibrary(){
+  const query=$('librarySearch').value.trim().toLowerCase(),closed=new Set([...$('libraryList').querySelectorAll('details:not([open])')].map(d=>d.dataset.group));
+  const options=[...$('song').options].filter(o=>!query||`${o.textContent} ${KEYS[o.value]||''} ${SONGS[o.value]?.join(' ')||''}`.toLowerCase().includes(query));
+  $('libraryList').innerHTML=['재즈 스탠다드','악보 연습','기본 진행','직접 만든 곡'].map(group=>{
+    const songs=options.filter(o=>libraryGroup(o.value)===group);if(query&&!songs.length)return '';
+    return `<details data-group="${group}" ${query||!closed.has(group)?'open':''}><summary>${group}<small>${songs.length}</small></summary>${songs.map(o=>`<button class="library-song ${o.value===$('song').value?'is-current':''}" data-library-song="${esc(o.value)}" aria-current="${o.value===$('song').value?'page':'false'}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2h7l3 3v13H5zM8 8h4M8 11h4M8 14h3"/></svg><span>${esc(o.textContent.replace(/ · .*$/,''))}</span><small>${esc(KEYS[o.value]||'C')}</small></button>`).join('')||'<p class="library-empty">새 곡을 추가해보세요.</p>'}</details>`;
+  }).join('')||'<p class="library-empty">검색 결과가 없습니다.</p>';
+}
+$('librarySearch').oninput=drawLibrary;
+$('libraryList').onclick=e=>{const b=e.target.closest('[data-library-song]');if(!b)return;$('song').value=b.dataset.librarySong;$('song').onchange();go('practice');};
+
+function songCatalog(){drawLibrary();for(const key of [...catalog.keys()])if(key.startsWith('song:'))catalog.delete(key);for(const o of $('song').options){if(o.value==='draft')continue;catalog.set('song:'+o.value,{title:o.textContent,display:'',detail:SONGS[o.value].length+'마디 · '+KEYS[o.value],color:o.value==='autumn'?'autumn':o.value==='custom'?'custom':'fly',mode:'voicing',song:o.value});}}
 songCatalog();
 const PALETTE={voicing:['노랑','var(--yellow)'],solo:['민트','var(--mint)'],triad:['보라','var(--purple)'],autumn:['오렌지','var(--peach)'],fly:['아이보리','#eae9e5'],blues:['회색','#c4c5be'],custom:['차콜','#262625']};
-const DEFAULT_HOME=['voicing','solo','triad','song:fly','song:autumn','song:blues','song:custom'];
+const DEFAULT_HOME=['voicing','solo','triad','song:misty','song:fly','song:autumn','song:blues','song:custom'];
 function cleanSlots(value){const source=Array.isArray(value)?value:DEFAULT_HOME;return Array.from({length:11},(_,i)=>{const v=source[i],id=typeof v==='string'?v:v?.id;return {id:typeof id==='string'&&catalog.has(id)?id:null,color:v&&typeof v==='object'&&Object.hasOwn(PALETTE,v.color)?v.color:null};});}
 let slots=cleanSlots(DEFAULT_HOME),editingHome=false,activeSlot=null;
 try{const saved=localStorage.getItem(HOME_KEY)||localStorage.getItem('guitar-home-v1');if(saved!==null)slots=cleanSlots(JSON.parse(saved));}catch{}
@@ -954,7 +1015,7 @@ function drawHome(){
       </button>${editingHome&&item?`<button class="tile-remove" data-remove="${i}" aria-label="${i+1}번 칸 ${esc(item.title)} 제거">×</button>`:''}
     </div>`;
   }).join('');
-  if(editingHome){$('slotHint').textContent=activeSlot===null?'바꿀 칸을 선택하세요. 항목은 빈 칸에도 바로 추가할 수 있습니다.':`${activeSlot+1}번 칸 · 아래에서 항목과 색상을 고르세요.`;
+  if(editingHome){$('slotHint').textContent=activeSlot===null?'바꿀 칸을 선택하세요. 항목은 빈 칸에도 바로 추가할 수 있습니다.':`${activeSlot+1}번 칸 · 아래에서 항목을 고르세요.`;
     $('tileCatalog').innerHTML=['연습','곡'].map(group=>`<h2>${group}</h2>`+[...catalog].filter(([,item])=>Boolean(item.song)===(group==='곡')).map(([id,item])=>`<button class="catalog-item" data-add="${esc(id)}">${esc(item.title)}</button>`).join('')).join('');
     const selected=activeSlot!==null?slots[activeSlot]:null,color=selected?.color||catalog.get(selected?.id)?.color;
     $('tileColors').disabled=!selected;$('colorChoices').innerHTML=Object.entries(PALETTE).map(([id,[label,paint]])=>`<button class="swatch" data-color="${id}" aria-label="${label}" title="${label}" aria-pressed="${color===id}" style="--swatch:${paint}"></button>`).join('');
@@ -1005,6 +1066,6 @@ function startChat(){if(!clientId)clientId=chatClient();try{$('chatName').value=
 $('chatForm').onsubmit=async e=>{e.preventDefault();const nickname=$('chatName').value.trim(),message=$('chatMessage').value.trim();if(!nickname||!message)return;$('chatSend').disabled=true;$('chatStatus').textContent='보내는 중…';try{const response=await fetch(CHAT_API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({nickname,message,client:clientId})}),data=await response.json();if(!response.ok)throw Error(data.error||'메시지를 보내지 못했습니다.');try{localStorage.setItem(CHAT_NAME,nickname);}catch{}$('chatMessage').value='';chatSignature='';await loadChat();$('chatMessage').focus();}catch(error){$('chatStatus').textContent=error.message;}finally{$('chatSend').disabled=false;}};
 $('chatMessage').onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))$('chatForm').requestSubmit();};
 
-go(decodeURIComponent(location.hash.slice(1))||'main');
+go(decodeURIComponent(location.hash.slice(1))||'practice');
 refresh();
 </script></body></html>

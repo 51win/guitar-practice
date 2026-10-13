@@ -103,7 +103,7 @@ assert.deepEqual([0, 4, 7, 10].map(iv => p.dotStyle(iv).fill),
   ['var(--yellow)', 'var(--mint)', 'var(--peach)', 'var(--purple)']);
 reg.degColor.checked = false;
 assert.equal(p.dotStyle(0).fill, 'var(--yellow)');
-assert.equal(p.dotStyle(4).fill, 'var(--cream)');
+assert.equal(p.dotStyle(4).fill, 'var(--panel)');
 // 선택지는 네 가지, 기준 프렛은 표시 범위 안에서만 이동한다.
 assert.deepEqual(reg.endFret.options.map(o => o.value), ['12','15','17','22']);
 p.selectAnchor(30);
@@ -244,8 +244,8 @@ assert.equal(vm.runInContext('selectedScale()',ctx),'aeolian');
 assert.deepEqual([...vm.runInContext("SCALES.phrygianDominant[1]",ctx)],[0,1,4,5,7,8,10]);
 assert.equal(p.name(p.parseBar('BmM7/A#')[0]),'BmMaj7/B♭');
 
-// All public presets parse in every key. Ten standards = two existing + eight added.
-assert.equal(vm.runInContext('STANDARD_PRESETS.length+2',ctx),10);
+// All public presets parse in every key. Eleven standards = two existing + nine added.
+assert.equal(vm.runInContext('STANDARD_PRESETS.length+2',ctx),11);
 for(const id of vm.runInContext('STANDARD_PRESETS.map(p=>p.id)',ctx)){
  p.setSong(id);for(let key=0;key<12;key++){p.setKey(key);assert.ok(p.seq().flat().every(c=>Number.isInteger(c.root)&&c.root>=0&&c.root<12));}
 }
@@ -335,7 +335,7 @@ for(let n=0;n<16;n++){ac.currentTime=n*.125;scheduler();}playing=false;`,ctx);
 assert.deepEqual([...sandbox.scheduledGuide].map(e=>e.midi),[59,57,59,62,50,57,59,57]);
 assert.deepEqual([...sandbox.clickTimes],[.5,1.5]);
 vm.runInContext(`playing=false;ac=null;`,ctx);
-console.log('통과 — 코드 단위 이동 · 코드별 스케일 · 스탠다드 10곡 · 실루엣 178마디 · 사무라이 하트 90마디 · 운지/16분음표/쉼표/메트로놈');
+console.log('통과 — 코드 단위 이동 · 코드별 스케일 · 스탠다드 11곡 · 실루엣 178마디 · 사무라이 하트 90마디 · 운지/16분음표/쉼표/메트로놈');
 // The complete score ends once; a selected last-bar loop stays in that bar.
 vm.runInContext(`ac={currentTime:0};playing=true;scoreFinished=false;resumeGuide=false;loopRange=null;scheduleBar=177;scheduleBeat=3.75;nextTime=0;queue=[];countLeft=0;bar=177;beat=3.5;scheduler();ac.currentTime=.13;scheduler();`,ctx);
 assert.equal(vm.runInContext('playing',ctx),false);
@@ -346,3 +346,93 @@ assert.equal(vm.runInContext('bar',ctx),177);
 assert.equal(vm.runInContext('scoreFinished',ctx),false);
 vm.runInContext(`playing=false;ac=null;loopRange=null;`,ctx);
 console.log('통과 — 실루엣 곡 끝 정지 · 마지막 마디 반복');
+
+// Seven-day plan: actual shared music data, timer interactions and persistence.
+reg['jw-layer']=mk({value:'scale'});reg['jw-labels']=mk({value:'note'});reg['jw-frets']=mk({value:'12'});
+vm.runInContext(fs.readFileSync(new URL('./jazz-week.js',import.meta.url),'utf8')+';globalThis.weekProbe=JazzWeek;',ctx);
+const w=sandbox.weekProbe;
+assert.equal(w.days.length,7);
+for(const day of w.days){assert.equal(day.steps.reduce((n,s)=>n+s[0],0),30);assert.equal(day.steps.length,4);}
+assert.equal(w.noteAt('Ebmaj7','ionian',2,8).role,'root');
+assert.equal(w.noteAt('Ebmaj7','ionian',1,8).role,'third');
+assert.equal(w.noteAt('Ebmaj7','ionian',0,10).role,'seventh');
+assert.equal(w.noteAt('Ebmaj7','ionian',0,1).role,'scale');
+assert.equal(w.noteAt('E7','phrygianDominant',0,4).note,'G♯');
+assert.equal(w.noteAt('E7','phrygianDominant',0,4).degree,'3');
+assert.equal(w.remaining(10000,7200),3);assert.equal(w.remaining(10000,11000),0);
+for(const group of Object.values(w.groups))for(const [i,symbol] of group.chords.entries()){
+  for(let string=0;string<6;string++)for(let fret=0;fret<=17;fret++){
+    const n=w.noteAt(symbol,group.scales[i],string,fret);assert.ok(n.note&&n.degree);
+  }
+}
+const scaleSet=(symbol,scale)=>new Set(Array.from({length:12},(_,f)=>w.noteAt(symbol,scale,0,f)).filter(n=>n.role).map(n=>n.note));
+assert.deepEqual(scaleSet('Bbm7','dorian'),scaleSet('Eb7','mixolydian'));
+assert.deepEqual(scaleSet('Eb7','mixolydian'),scaleSet('Abmaj7','ionian'));
+assert.equal(reg['jw-time'].textContent,'05:00');
+reg['jw-start'].onclick();assert.equal(reg['jw-start'].textContent,'일시정지');
+reg['jw-start'].onclick();assert.equal(reg['jw-start'].textContent,'시작');
+reg['jw-next'].onclick();assert.equal(reg['jw-time'].textContent,'08:00');
+reg['jw-start'].onclick();reg['jw-reset'].onclick();assert.equal(reg['jw-time'].textContent,'08:00');assert.equal(reg['jw-start'].textContent,'시작');
+reg['jw-steps'].onchange({target:{matches:()=>true,dataset:{jwCheck:'1'},checked:true}});
+reg['jw-notes'].value='G → G♯ 연결';reg['jw-notes'].oninput();
+const weekSaved=JSON.parse(storage.get('guitar-jazz-week-20260928-v1'));
+assert.equal(weekSaved.checked['0-1'],true);assert.equal(weekSaved.notes[0],'G → G♯ 연결');
+assert.ok(reg['jw-board'].innerHTML.includes('6 E'));
+console.log('통과 — 7일 × 30분 · 6현 지판 · ii–V–I 스케일 · 타이머 · 체크/메모 저장');
+
+assert.equal(w.noteAt('Bm7b5','lydian',0,1).degree,'♭5');
+assert.equal(w.noteAt('Bm7b5','lydian',0,1).note,'F');
+
+// Notebook: shared selection, per-song storage, untrusted names and storage failures.
+p.selectTab('voicing');assert.equal(reg.degColor.checked,false);
+p.selectTab('triad');assert.equal(reg.degColor.checked,false);
+p.selectTab('solo');assert.equal(reg.degColor.checked,false);
+p.setSong('misty');
+assert.equal(p.seq().length,32);assert.equal(p.NAMES[p.keyOf('misty').root],'E♭');
+assert.deepEqual([bar(0),bar(1,0),bar(1,1),bar(2),bar(3,0),bar(3,1)],['E♭maj7','B♭m7','E♭7','A♭maj7','A♭m7','D♭7']);
+reg.songNotes.value='<script>literal memo</script>';reg.songNotes.oninput();
+assert.equal(JSON.parse(storage.get('guitar-song-notes-v1')).misty,'<script>literal memo</script>');
+p.setSong('blue-bossa');vm.runInContext('syncNotebook()',ctx);assert.equal(reg.songNotes.value,'');
+p.setSong('misty');vm.runInContext('syncNotebook()',ctx);assert.equal(reg.songNotes.value,'<script>literal memo</script>');
+reg.librarySearch.value='misty';vm.runInContext('drawLibrary()',ctx);
+assert.ok(reg.libraryList.innerHTML.includes('data-library-song="misty"'));
+assert.ok(!reg.libraryList.innerHTML.includes('data-library-song="blue-bossa"'));
+reg.librarySearch.value='';
+vm.runInContext(`registerSong('user-999999',{title:'<img src=x onerror=alert(1)>',key:'C',bars:['Cmaj7']});drawLibrary();`,ctx);
+assert.ok(reg.libraryList.innerHTML.includes('&lt;img src=x onerror=alert(1)&gt;'));
+assert.ok(!reg.libraryList.innerHTML.includes('<img src=x'));
+const writeNotes=sandbox.localStorage.setItem;
+sandbox.localStorage.setItem=()=>{throw Error('storage unavailable')};
+reg.songNotes.value='keep this note';reg.songNotes.oninput();
+assert.equal(reg.songNotes.value,'keep this note');assert.ok(reg.songNotesStatus.textContent.includes('저장하지 못했습니다'));
+sandbox.localStorage.setItem=writeNotes;
+console.log('통과 — Misty 32마디 · 접이식 목록/검색 · 곡별 메모 저장/전환 · HTML 이스케이프 · 저장 실패 안내');
+// Editing and saving a preset keeps its memo with the draft and final user song.
+vm.runInContext('ensureDraft();persistDraft();',ctx);
+assert.equal(reg.songNotes.value,'keep this note');
+assert.equal(JSON.parse(storage.get('guitar-song-notes-v1')).draft,'keep this note');
+reg.editSongTitle.value='Misty 메모 저장';p.saveSong();
+assert.match(reg.song.value,/^user-\d+$/);
+assert.equal(JSON.parse(storage.get('guitar-song-notes-v1'))[reg.song.value],'keep this note');
+assert.equal(reg.songNotes.value,'keep this note');
+
+// Use the same toggle handlers as both visible fretboards.
+p.setSong('misty');p.selectTab('solo');
+vm.runInContext("setFretboardLabels('labels','degree')",ctx);
+assert.equal(reg.labels.value,'degree');
+assert.ok(reg.board.innerHTML.includes('>R</text>'));
+assert.ok(reg.board.innerHTML.includes('>3</text>'));
+assert.ok(reg.board.innerHTML.includes('>7</text>'));
+vm.runInContext("bar=1;beat=0;draw()",ctx);
+assert.ok(reg.board.innerHTML.includes('>♭3</text>'));
+assert.ok(reg.board.innerHTML.includes('>♭7</text>'));
+vm.runInContext("setFretboardLabels('labels','note')",ctx);
+assert.ok(!reg.board.innerHTML.includes('>R</text>'));
+assert.ok(reg.board.innerHTML.includes('>B♭</text>'));
+vm.runInContext("setFretboardLabels('jw-labels','degree')",ctx);
+assert.ok(reg['jw-board'].innerHTML.includes('>R</text>'));
+assert.ok(reg['jw-board'].innerHTML.includes('>3</text>'));
+vm.runInContext("setFretboardLabels('jw-labels','note')",ctx);
+assert.ok(reg['jw-board'].innerHTML.includes('>E♭</text>'));
+assert.ok(!reg['jw-board'].innerHTML.includes('>R</text>'));
+console.log('통과 — 두 지판 음 이름/도수 전환 · 메이저 3·7 · 마이너 ♭3·♭7');
