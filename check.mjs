@@ -35,7 +35,7 @@ for (const [id, v] of Object.entries({
 
 const sandbox = {
   CHECKED,
-  document: { title: '', getElementById: id => (reg[id] ??= mk()), querySelectorAll: () => [], addEventListener: noop },
+  document: { title: '', getElementById: id => (reg[id] ??= mk()), querySelector: () => mk(), querySelectorAll: () => [], addEventListener: noop },
   window: {}, location: { hash: '' }, localStorage: new Map([['getItem', null]]),
   ResizeObserver: class { observe() {} }, Option: function (text, value) { return { text, textContent:text, value: String(value), remove(){reg.song.options=reg.song.options.filter(o=>o!==this);} }; },
   addEventListener: noop, scrollTo: noop, setInterval: () => 0, clearInterval: noop, setTimeout: noop, clearTimeout: noop,
