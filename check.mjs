@@ -436,3 +436,13 @@ vm.runInContext("setFretboardLabels('jw-labels','note')",ctx);
 assert.ok(reg['jw-board'].innerHTML.includes('>E♭</text>'));
 assert.ok(!reg['jw-board'].innerHTML.includes('>R</text>'));
 console.log('통과 — 두 지판 음 이름/도수 전환 · 메이저 3·7 · 마이너 ♭3·♭7');
+
+// ── 비밥 3도 타겟팅 ─────────────────────────────────────────
+vm.runInContext(`document.getElementById('song').value='blues';fillKeys();anchor=7;document.getElementById('endFret').value='17';document.getElementById('bebopRhythm').value='1';`,ctx);
+const line = (lvl, chord) => vm.runInContext(`document.getElementById('bebopLevel').value='${lvl}';bebopLine(parse('${chord}')).map(n=>(n.s+1)+':'+n.f).join(' ')`, ctx);
+assert.equal(line('4','F7'), '2:11 2:8 2:9 2:10', 'F7 4음: 4·2·♯2·3, 2번줄 10프렛 A가 타겟');
+assert.equal(line('5','Gm7'), '3:2 3:5 3:4 3:2 3:3', 'Gm7 5음: 2·4·3·2·♭3, 3번줄 3프렛 B♭가 타겟');
+assert.equal(line('1','Cmaj7'), '3:9', 'Cmaj7 바로 3도');
+vm.runInContext(`document.getElementById('bebopLevel').value='4';tab='bebop';draw();`, ctx);
+assert.ok(reg.candidates.innerHTML.includes('박 전부터'));
+console.log('통과 — 비밥 3도 타겟팅 공식');
