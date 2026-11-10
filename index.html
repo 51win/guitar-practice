@@ -264,7 +264,7 @@ option{background:#252524;color:var(--cream)}
   </aside>
 
   <main class="work">
-    <div class="page-topbar"><span>기타 연습 <span aria-hidden="true">/</span> <span id="pageLocation">연습 노트</span></span><span>나의 음악 노트</span></div>
+    <div class="page-topbar"><span><button class="rail-toggle" id="railToggle" type="button" aria-expanded="true" aria-label="사이드바 접기" title="사이드바 접기 · 펼치기">☰</button>기타 연습 <span aria-hidden="true">/</span> <span id="pageLocation">연습 노트</span></span><span>나의 음악 노트</span></div>
 
     <section class="panel" id="scr-main" hidden>
       <div class="panel-head"><h1 class="scr-title">연습 노트</h1><button class="pill" id="homeSettings" aria-expanded="false" aria-controls="homeEditor">개인 설정</button></div>
@@ -324,7 +324,7 @@ option{background:#252524;color:var(--cream)}
       <div class="practice-layout">
       <div class="practice-document">
         <div class="document-heading"><h2>코드 진행</h2><span id="documentMeta"></span></div>
-        <p class="document-help">마디를 선택하면 오른쪽 지판이 함께 바뀝니다.</p>
+        <p class="document-help">마디를 선택하면 위쪽 지판이 함께 바뀝니다.</p>
         <div class="chart-tools" id="chartTools"><p class="scr-lead" id="chartHint">마디를 더블클릭해 코드 수정</p><button class="pill" id="editBar">마디 편집</button><button class="pill" id="addBar" hidden>＋ 마디 추가</button></div>
         <div class="chart" id="chart"></div>
         <div class="song-notebook"><label for="songNotes">연습 메모</label><textarea id="songNotes" maxlength="6000" placeholder="오늘의 템포, 어려웠던 마디, 기억할 보이싱을 남겨보세요."></textarea><small id="songNotesStatus" role="status">이 곡의 메모는 브라우저에 자동 저장됩니다.</small></div>
@@ -1068,4 +1068,6 @@ $('chatMessage').onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))$('cha
 
 go(decodeURIComponent(location.hash.slice(1))||'practice');
 refresh();
+{const app=document.querySelector('.app'),btn=$('railToggle'),set=hide=>{app.classList.toggle('rail-hidden',hide);btn.setAttribute('aria-expanded',String(!hide));btn.setAttribute('aria-label',hide?'사이드바 펼치기':'사이드바 접기');try{localStorage.setItem('railHidden',hide?'1':'');}catch{}};
+try{set(localStorage.getItem('railHidden')==='1');}catch{}btn.onclick=()=>set(!app.classList.contains('rail-hidden'));}
 </script></body></html>
