@@ -26,7 +26,7 @@ const mk = (over = {}) => ({
 const reg = {};
 for (const [id, v] of Object.entries({
   song: { value: 'blues' }, key: {}, endFret: {}, anchor: {}, radius: { value: '4' },
-  pentaType: { value: 'major' }, labels: { value: 'note' }, degColor: { checked: true },
+  bebopVary: { checked: false }, pentaType: { value: 'major' }, labels: { value: 'note' }, degColor: { checked: true },
   shapeSet: { querySelectorAll: () => CHECKED.shapeSet.map(v => ({ value: v, checked: true })),
               querySelector: () => (CHECKED.shapeSet.length ? {} : null) },
   triadSet: { querySelectorAll: () => CHECKED.triadSet.map(v => ({ value: v, checked: true })),
@@ -530,3 +530,101 @@ await vm.runInContext('start()',ctx);
 assert.equal(vm.runInContext('bebopChoices.has("stale-plan")',ctx),false);
 vm.runInContext('stop()',ctx);
 console.log('통과 — 비밥 자동 길이 조절 · 랜덤 후보/고정 · 지판/반주 일치 · 2/4코드 · 반복 · 8분음표 · 반 박 타겟');
+
+// Rhythm variation keeps the formula and target but changes onset, duration and rests.
+reg.bebopVary.checked=true;reg.bebopLevel.value='2b';reg.bebopRhythm.value='0.5';
+p.setSong('blues');
+vm.runInContext('bar=3;beat=0;tab="bebop";bebopPosition=null;resetBebopPlan()',ctx);
+const varied=JSON.parse(vm.runInContext(`(()=>{
+  const original=Math.random,out=[];
+  try{for(const pair of [[.999,0],[.999,.999],[.4,.999],[0,0]]){
+    let i=0;Math.random=()=>pair[i++%pair.length];resetBebopPlan();
+    out.push(bebopLine(parse('F7'),2,'varied-case').map(n=>({at:n.at,duration:n.duration,iv:n.iv})));
+  }}finally{Math.random=original;resetBebopPlan();}return JSON.stringify(out);
+})()`,ctx));
+assert.deepEqual(varied.map(line=>line[0].at),[-1.5,-1.5,-1,-.5]);
+assert.deepEqual(varied.map(line=>line[0].duration),[.5,1.5,1,.5]);
+assert.ok(varied[0][0].at+varied[0][0].duration<0,'음 뒤에 쉼표가 생긴다');
+assert.ok(varied.every(line=>line.length===2&&line.at(-1).at===0&&line.at(-1).iv===4));
+for(const rhythm of [1,.5])for(const beats of [.5,1,1.5,2,4])for(const mode of ['auto','random','2a','3','4','5']){
+  const notes=fittedLine(mode,beats,rhythm,'Gm7',`varied-${rhythm}-${beats}-${mode}`);
+  assert.equal(notes.at(-1).at,0);
+  assert.ok(notes[0].at>-beats);
+  notes.forEach((n,i)=>{
+    assert.ok(n.duration>0);
+    assert.equal(Math.round(n.at/rhythm),n.at/rhythm);
+    if(i+1<notes.length){assert.ok(n.at<notes[i+1].at);assert.ok(n.at+n.duration<=notes[i+1].at);}
+  });
+}
+reg.bebopLevel.value='2b';reg.bebopRhythm.value='0.5';
+vm.runInContext('resetBebopPlan();draw()',ctx);
+const rhythmCaption=reg.candidates.innerHTML,rhythmBoard=reg.board.innerHTML;
+vm.runInContext('draw()',ctx);
+assert.equal(reg.candidates.innerHTML,rhythmCaption);
+assert.equal(reg.board.innerHTML,rhythmBoard);
+assert.match(reg.bebopAuto.textContent,/리듬 다양화/);
+
+// Force a short approach followed by a rest and compare its preview with audio.
+vm.runInContext(`(()=>{const saved=Math.random;let i=0;try{Math.random=()=>[.999,0][i++%2];resetBebopPlan();bebopLine(parse('F7'),2,'3:1');}finally{Math.random=saved;}})();bebopPlayed=[];bebopFirst=false;`,ctx);
+reg.style.value='straight';reg.bpm.value='120';
+vm.runInContext('bebopSound(3,0,10)',ctx);
+const rhythmAudio=JSON.parse(vm.runInContext('JSON.stringify(bebopPlayed)',ctx));
+assert.deepEqual(rhythmAudio.map(n=>n.t),[10.25,11]);
+assert.ok(Math.abs(rhythmAudio[0].duration-.225)<1e-9);
+assert.match(vm.runInContext("bebopText(parse('F7'),bebopLine(parse('F7'),2,'3:1'))",ctx),/1.5박 전.*0.5박/);
+reg.style.value='swing';vm.runInContext('bebopPlayed=[];bebopSound(3,0,10)',ctx);
+const swung=JSON.parse(vm.runInContext('JSON.stringify(bebopPlayed)',ctx));
+assert.ok(Math.abs(swung[0].t-(10+1/3))<1e-9);
+assert.ok(Math.abs(swung[0].duration-.15)<1e-9);
+assert.equal(swung.at(-1).t,11);
+
+// Every visible third is present, clickable and can anchor its own string/fret.
+reg.bebopVary.checked=false;reg.bebopLevel.value='4';reg.bebopRhythm.value='1';
+p.setSong('blues');vm.runInContext('bar=0;beat=0;bebopPosition=null;resetBebopPlan();draw()',ctx);
+const thirds=JSON.parse(vm.runInContext("JSON.stringify(bebopTargets(parse('F7')))",ctx));
+assert.equal(new Set(thirds.map(n=>n.s)).size,6);
+assert.equal((reg.board.innerHTML.match(/data-bebop-target=/g)||[]).length,thirds.length);
+for(const target of thirds){
+  assert.ok(reg.board.innerHTML.includes(`data-bebop-target="${target.s}:${target.f}"`));
+  vm.runInContext(`boardAction({hasAttribute:name=>name==='data-bebop-target',dataset:{bebopTarget:'${target.s}:${target.f}'}})`,ctx);
+  const notes=JSON.parse(vm.runInContext("JSON.stringify(bebopLine(parse('F7'),4,'anchor-case'))",ctx));
+  assert.equal(notes.at(-1).s,target.s);assert.equal(notes.at(-1).f,target.f);
+  assert.ok(notes.every(n=>n.f>=0&&n.f<=Number(reg.endFret.value)));
+  assert.ok(reg.board.innerHTML.includes(`data-bebop-target="${target.s}:${target.f}" role="button" tabindex="0"`));
+  assert.ok(reg.board.innerHTML.includes('aria-pressed="true"'));
+}
+vm.runInContext('setBebopTarget(5,5)',ctx);
+const nearNext=JSON.parse(vm.runInContext("JSON.stringify(bebopLine(parse('Bb7'),2,'near-next'))",ctx));
+assert.ok(Math.abs(nearNext.at(-1).f-5)<=3,'다음 코드도 선택한 프렛 주변에 남는다');
+assert.ok(Math.abs(nearNext.at(-1).s-5)<=1);
+assert.match(reg.rangeInfo.textContent,/6번줄 5프렛/);
+
+vm.runInContext('setBebopTarget(0,5)',ctx);
+const nearFirstString=JSON.parse(vm.runInContext("JSON.stringify(bebopLine(parse('Bb7'),2,'near-first-string'))",ctx));
+assert.ok(Math.abs(nearFirstString.at(-1).f-5)<=3,'높은 줄에서도 주변 프렛을 우선한다');
+
+// Open strings and the final fret retain the chosen target and shorten only if needed.
+p.setKey(0);vm.runInContext('bar=0;beat=0;setBebopTarget(0,0)',ctx);
+const openLine=JSON.parse(vm.runInContext("JSON.stringify(bebopLine(current(),4,'open-target'))",ctx));
+assert.equal(openLine.at(-1).f,0);assert.equal(openLine.at(-1).s,0);
+assert.ok(openLine.every(n=>n.f>=0));
+reg.endFret.value='12';
+vm.runInContext('setBebopTarget(0,12)',ctx);
+const highLine=JSON.parse(vm.runInContext("JSON.stringify(bebopLine(current(),4,'high-target'))",ctx));
+assert.equal(highLine.at(-1).s,0);assert.equal(highLine.at(-1).f,12);
+assert.ok(highLine.every(n=>n.f<=Number(reg.endFret.value)));
+assert.ok(!reg.board.innerHTML.includes('undefined'));
+const priorPosition=vm.runInContext('JSON.stringify(bebopPosition)',ctx);
+vm.runInContext('setBebopTarget(9,-1)',ctx);
+assert.equal(vm.runInContext('JSON.stringify(bebopPosition)',ctx),priorPosition);
+
+// Starting preserves the selected practice area; changing songs clears it.
+vm.runInContext('ac={currentTime:0,resume:async()=>{}};bus=null;playing=false;',ctx);
+await vm.runInContext('start()',ctx);
+assert.equal(vm.runInContext('JSON.stringify(bebopPosition)',ctx),priorPosition);
+vm.runInContext('stop()',ctx);
+reg.song.onchange();
+assert.equal(vm.runInContext('bebopPosition',ctx),null);
+reg.bebopVary.checked=false;reg.bebopVary.onchange();
+assert.deepEqual(fittedLine('2b',2,.5).map(n=>({at:n.at,duration:n.duration})),[{at:-.5,duration:.5},{at:0,duration:.5}]);
+console.log('통과 — 비밥 리듬 다양화/쉼표/긴 음 · 스윙 타이밍 · 6현 전체 3도/클릭 · 개방현/지판 끝 · 선택 위치 유지');

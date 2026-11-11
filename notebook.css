@@ -117,3 +117,5 @@ option{background:#fff;color:var(--ink)}
 .practice-studio{position:static;grid-row:1;padding-left:0;border-left:0}
 #board{min-width:660px;height:auto;aspect-ratio:1400/325}
 .chord-group{width:auto;flex:1;min-width:320px}.pos{width:auto}
+
+#board [data-bebop-target]:focus-visible circle,#board [data-bebop-target][aria-pressed=true] circle{stroke:var(--ink);stroke-width:3}
