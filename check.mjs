@@ -602,6 +602,7 @@ assert.match(reg.rangeInfo.textContent,/6번줄 5프렛/);
 vm.runInContext('setBebopTarget(0,5)',ctx);
 const nearFirstString=JSON.parse(vm.runInContext("JSON.stringify(bebopLine(parse('Bb7'),2,'near-first-string'))",ctx));
 assert.ok(Math.abs(nearFirstString.at(-1).f-5)<=3,'높은 줄에서도 주변 프렛을 우선한다');
+assert.ok(Math.abs(nearFirstString.at(-1).s)<=1,'높은 줄에서 낮은 줄로 크게 건너뛰지 않는다');
 
 // Open strings and the final fret retain the chosen target and shorten only if needed.
 p.setKey(0);vm.runInContext('bar=0;beat=0;setBebopTarget(0,0)',ctx);

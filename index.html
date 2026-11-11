@@ -738,7 +738,7 @@ function bebopContext(i=bar,b=beat){
 function bebopLine(c,beats=4,id=''){
   const third=TYPES[c.type][1],patterns=BEBOP[third],step=Number($('bebopRhythm').value)||1,capacity=Math.max(1,Math.ceil(beats/step)),max=Number($('endFret').value),ref=bebopPosition||{s:2,f:anchor};
   const targets=bebopTargets(c).filter(n=>bebopPosition||[2,1].includes(n.s));
-  const distance=n=>Math.abs(n.f-ref.f)*2+(bebopPosition?Math.abs(n.s-ref.s):0);
+  const distance=n=>Math.abs(n.f-ref.f)+(bebopPosition?Math.abs(n.s-ref.s)*2:0);
   targets.sort((a,b)=>distance(a)-distance(b)||([2,1].indexOf(a.s)-[2,1].indexOf(b.s)));
   const best=targets[0];if(!best)return [];
   const valid=Object.keys(patterns).filter(k=>patterns[k].length<=capacity&&patterns[k].every(iv=>best.f+iv-third>=0&&best.f+iv-third<=max));
