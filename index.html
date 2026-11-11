@@ -340,7 +340,7 @@ option{background:#252524;color:var(--cream)}
           <button class="pill" data-tab="bebop" aria-pressed="false">비밥 타겟팅</button>
         </nav>
         <label class="chip-sel" id="pentaSet" hidden><select id="pentaType" aria-label="펜타토닉 종류"><option value="major">메이저 펜타토닉</option><option value="minor">마이너 펜타토닉</option></select></label>
-        <label class="chip-sel" id="bebopLevelSet" hidden><span>공식</span><select id="bebopLevel" aria-label="3도 타겟팅 공식"><option value="1">바로 3도 · 첫 박</option><option value="2b">2음 · 아래 반음 어프로치</option><option value="2a">2음 · 위 반음 어프로치</option><option value="3">3음 · 앞 2개</option><option value="4" selected>4음 · 앞 2개 + 뒤 1개</option><option value="5">5음 · 앞 3개 + 뒤 1개</option></select></label>
+        <label class="chip-sel" id="bebopLevelSet" hidden><span>공식</span><select id="bebopLevel" aria-label="3도 타겟팅 공식"><option value="auto" selected>자동 · 코드 길이에 맞춤</option><option value="random">랜덤 · 가능한 공식</option><option value="1">바로 3도 · 첫 박</option><option value="2b">2음 · 아래 반음 어프로치</option><option value="2a">2음 · 위 반음 어프로치</option><option value="3">3음 · 앞 2개</option><option value="4">4음 · 앞 2개 + 뒤 1개</option><option value="5">5음 · 앞 3개 + 뒤 1개</option></select></label>
         <label class="chip-sel" id="bebopRhythmSet" hidden><span>리듬</span><select id="bebopRhythm" aria-label="라인 리듬"><option value="1">4분음표</option><option value="0.5">8분음표</option></select></label>
         <div class="chk-set" id="shapeSet" role="group" aria-label="보이싱 모양 · 여러 개 선택 가능">
           <label class="chk"><input type="checkbox" value="drop14" checked>Drop2 · 1–4번줄</label>
@@ -356,6 +356,7 @@ option{background:#252524;color:var(--cream)}
         </div>
       </div>
 
+      <p class="degree-help" id="bebopAuto" role="status" hidden></p>
       <div class="rows">
         <label class="chip-sel" id="radiusControl"><span>범위</span><select id="radius" aria-label="주변 범위">
           <option value="3">±3프렛</option><option value="5" selected>±5프렛</option><option value="7">±7프렛</option><option value="9">±9프렛</option>
@@ -705,18 +706,35 @@ let chartSignature='';
 // 비밥 3도 타겟팅: 메이저·도미넌트는 2·♯2·3·4, 마이너·m7♭5는 2·♭3·3·4 크로매틱 손 모양을 한 줄에서 잡는다. 마지막 음이 타겟 3도.
 const BEBOP={4:{1:[4],'2b':[3,4],'2a':[5,4],3:[2,3,4],4:[5,2,3,4],5:[2,5,2,3,4]},3:{1:[3],'2b':[2,3],'2a':[4,3],3:[5,4,3],4:[2,5,4,3],5:[2,5,4,2,3]}};
 const BEBOP_DEG={4:{2:'2',3:'♯2',4:'3',5:'4'},3:{2:'2',3:'♭3',4:'3',5:'4'}};
-function bebopLine(c){
-  const third=TYPES[c.type][1],ivs=BEBOP[third][$('bebopLevel').value]||BEBOP[third][4],max=Number($('endFret').value);let best=null;
+const bebopChoices=new Map();
+function bebopContext(i=bar,b=beat){
+  const bars=seq(),slot=chordSlot(i,b),span=(j,k)=>(chordStarts(j)[k+1]??4)-chordStarts(j)[k];
+  const prevBar=slot?i:loopRange&&i<=loopRange[0]?loopRange[1]:(i-1+bars.length)%bars.length,prevSlot=slot?slot-1:bars[prevBar].length-1;
+  const nextBar=slot+1<bars[i].length?i:nextIndex(i),nextSlot=slot+1<bars[i].length?slot+1:0,now=span(i,slot);
+  // 진입 전·후의 짧은 코드 길이에 맞춰 앞 코드의 타겟과 겹치지 않게 한다.
+  return {current:{beats:Math.min(now,span(prevBar,prevSlot)),id:i+':'+slot},next:{beats:Math.min(now,span(nextBar,nextSlot)),id:nextBar+':'+nextSlot}};
+}
+function bebopLine(c,beats=4,id=''){
+  const third=TYPES[c.type][1],patterns=BEBOP[third],step=Number($('bebopRhythm').value)||1,capacity=Math.max(1,Math.ceil(beats/step)),max=Number($('endFret').value);let level=$('bebopLevel').value,best=null;
+  if(level==='random'){
+    const key=[$('song').value,id,c.type,beats,step].join(':'),valid=Object.keys(patterns).filter(k=>patterns[k].length<=capacity);
+    if(!bebopChoices.has(key))bebopChoices.set(key,valid[Math.floor(Math.random()*valid.length)]);
+    level=bebopChoices.get(key);
+  }
+  const fallback=capacity>=4?'4':capacity===3?'3':capacity===2?(third===4?'2b':'2a'):'1';
+  const ivs=patterns[level]&&patterns[level].length<=capacity?patterns[level]:patterns[fallback];
   // 근음 6번줄 → 3번줄, 근음 5번줄 → 2번줄의 3도. 4프렛 손 모양이 지판 안에 들어오고 기준 프렛에 가장 가까운 자리.
   for(const s of [2,1])for(let f=mod(c.root+third-OPEN[s]);f<=max;f+=12)if(f+2-third>=1&&f+5-third<=max&&(!best||Math.abs(f-anchor)<Math.abs(best.f-anchor)))best={s,f};
   return best?ivs.map((iv,i)=>({s:best.s,f:best.f+iv-third,midi:OPEN[best.s]+best.f+iv-third,iv,order:i+1})):[];
 }
-function bebopText(c){const line=bebopLine(c),third=TYPES[c.type][1],lead=(line.length-1)*Number($('bebopRhythm').value);return line.length?`${name(c)} · ${line.map(n=>BEBOP_DEG[third][n.iv]+' '+spell(mod(OPEN[n.s]+n.f))).join(' → ')} · ${lead?lead+'박 전부터':'코드 첫 박'} · ${line[0].s+1}번줄 ${line.at(-1).f}프렛`:`${name(c)} · 이 지판 범위에 3도 손 모양이 없습니다`;}
+function bebopText(c,line){const third=TYPES[c.type][1],lead=(line.length-1)*Number($('bebopRhythm').value);return line.length?`${name(c)} · ${line.map(n=>BEBOP_DEG[third][n.iv]+' '+spell(mod(OPEN[n.s]+n.f))).join(' → ')} · ${lead?lead+'박 전부터':'코드 첫 박'} · ${line[0].s+1}번줄 ${line.at(-1).f}프렛`:`${name(c)} · 이 지판 범위에 3도 손 모양이 없습니다`;}
 function draw(){
 const ahead=upcoming(),c=ahead[0],ss=seq(),ints=TYPES[c.type],scale=tab==='penta'?PENTATONIC[$('pentaType').value]:null,guideOnly=scoreData()?.backing===false;
 if(guideOnly){const measure=n=>bar+n<=ss.length?String(bar+n).padStart(2,'0'):'—';$('current').textContent=measure(1);$('next').textContent=measure(2);$('third').textContent=measure(3);$('fourth').textContent=measure(4);$('notes').textContent=scoreSection(bar)[1];$('currentLabel').textContent='현재 마디';$('nextLabel').textContent='다음 마디';$('thirdLabel').textContent='다다음';$('fourthLabel').textContent='그다음';}
 else{$('current').textContent=name(c);$('next').textContent=name(ahead[1]);$('third').textContent=name(ahead[2]);$('fourth').textContent=name(ahead[3]);$('notes').textContent=(tab==='triad'?ints.slice(0,3):ints).map(iv=>spell(mod(c.root+iv))).join('  ·  ');$('currentLabel').textContent=tab==='triad'?'현재 코드의 트라이어드':'현재 코드';$('nextLabel').textContent='다음';$('thirdLabel').textContent='다다음';$('fourthLabel').textContent='그다음';}
 $('nextNotes').textContent='';$('boardTitle').textContent=tab==='penta'?NAMES[+$('key').value]+' '+($('pentaType').value==='minor'?'마이너':'메이저')+' 펜타토닉':tab==='triad'?'트라이어드':tab==='solo'?'코드톤':tab==='bebop'?'3도 타겟팅':'보이싱';$('rangeInfo').textContent=`기준 ${anchor}프렛${tab==='solo'||tab==='penta'?'':' · ±'+radius+'프렛'}`;$('legend').classList.toggle('root-only',!$('degColor').checked);$('legend').hidden=tab==='penta';$('pentaLegend').hidden=tab!=='penta';$('pentaLegend').classList.toggle('root-only',!$('degColor').checked);if(tab==='bebop')$('rangeInfo').textContent=`기준 ${anchor}프렛 · 숫자: 연주 순서 · 점선: 다음 코드`;
+const bebop=tab==='bebop'?bebopContext():null,bebopNow=bebop?bebopLine(c,bebop.current.beats,bebop.current.id):[],bebopNext=bebop?bebopLine(ahead[1],bebop.next.beats,bebop.next.id):[];
+if(bebop)$('bebopAuto').textContent=`${$('bebopLevel').value==='random'?'랜덤':$('bebopLevel').value==='auto'?'자동':'길이에 맞춤'} · 현재 ${bebopNow.length}음 / 다음 ${bebopNext.length}음 · 코드 길이와 리듬에 맞춰 조절${$('bebopLevel').value==='random'?' · 재생 시작 시 다시 선택':''}`;
 // Preserve bar nodes while moving through a progression so double-click and keyboard focus survive.
 syncScale();syncScore();
 const signature=JSON.stringify(ss);
@@ -731,7 +749,7 @@ for(let edge=0;edge<=max;edge++)svg+=`<line x1="${edges[edge]}" y1="${top-16}" x
 for(let f=1;f<=max;f++){svg+=`<g data-fret="${f}" role="button" tabindex="0" aria-label="${f}프렛 기준으로 선택" aria-pressed="${f===anchor}"><rect x="${edges[f-1]+1}" y="${boardHeight-32}" width="${Math.max(1,fw(f)-2)}" height="30" rx="2" fill="${f===anchor?'var(--accent)':'transparent'}"/><text x="${x(f)}" y="${boardHeight-10}" fill="${f===anchor?'var(--ink)':'var(--muted)'}" text-anchor="middle" font-size="${Math.min(18,fw(f)*.68)}" font-weight="${f===anchor?700:400}" pointer-events="none">${f}</text></g>`;if(f===12)svg+=`<g data-inlay="12"><circle cx="${x(f)}" cy="${(y(1)+y(2))/2}" r="4.9" fill="#a6a69a" opacity=".62"/><circle cx="${x(f)}" cy="${(y(3)+y(4))/2}" r="4.9" fill="#a6a69a" opacity=".62"/></g>`;else if([3,5,7,9,15,17,19,21].includes(f))svg+=`<circle data-inlay="${f}" cx="${x(f)}" cy="${(y(2)+y(3))/2}" r="5.6" fill="#a6a69a" opacity=".62"/>`;}
 for(let st=0;st<6;st++)svg+=`<text x="12" y="${y(st)+6}" text-anchor="middle" fill="var(--muted)" font-size="17">${st+1}</text><line x1="${left}" y1="${y(st)}" x2="${boardWidth-right}" y2="${y(st)}" stroke="var(--string)" stroke-width="${1+st*.35}"/>`;
 const pentaShape=tab==='penta'?currentPentaShape(max):null;
-let dots=new Map();if(tab==='solo'||tab==='penta'){for(let st=0;st<6;st++)for(let f=min;f<=max;f++){let iv=mod(OPEN[st]+f-(scale?+$('key').value:c.root));if((scale||ints).includes(iv))dots.set(st+':'+f,{s:st,f,iv,inShape:pentaShape?.has(st+':'+f),solid:true});else if(tab==='solo'&&$('showScale').checked&&SCALES[selectedScale()][1].includes(iv))dots.set(st+':'+f,{s:st,f,iv,solid:true,scaleNote:true});}}else if(tab==='bebop'){for(const n of bebopLine(ahead[1]))dots.set(n.s+':'+n.f,{...n,solid:true,preview:true});const line=bebopLine(c);for(const n of line){const k=n.s+':'+n.f,old=dots.get(k);dots.set(k,{...n,solid:true,text:old&&!old.preview?old.text+'·'+n.order:String(n.order),approach:n.order<line.length});}}else{for(const [idx,v] of candidates.entries())for(const n of v.notes)dots.set(n.s+':'+n.f,{...n,solid:false,candidate:idx});if(selected)for(const n of selected.notes)dots.set(n.s+':'+n.f,{...n,solid:true,candidate:candidates.indexOf(selected)});}
+let dots=new Map();if(tab==='solo'||tab==='penta'){for(let st=0;st<6;st++)for(let f=min;f<=max;f++){let iv=mod(OPEN[st]+f-(scale?+$('key').value:c.root));if((scale||ints).includes(iv))dots.set(st+':'+f,{s:st,f,iv,inShape:pentaShape?.has(st+':'+f),solid:true});else if(tab==='solo'&&$('showScale').checked&&SCALES[selectedScale()][1].includes(iv))dots.set(st+':'+f,{s:st,f,iv,solid:true,scaleNote:true});}}else if(tab==='bebop'){for(const n of bebopNext)dots.set(n.s+':'+n.f,{...n,solid:true,preview:true});const line=bebopNow;for(const n of line){const k=n.s+':'+n.f,old=dots.get(k);dots.set(k,{...n,solid:true,text:old&&!old.preview?old.text+'·'+n.order:String(n.order),approach:n.order<line.length});}}else{for(const [idx,v] of candidates.entries())for(const n of v.notes)dots.set(n.s+':'+n.f,{...n,solid:false,candidate:idx});if(selected)for(const n of selected.notes)dots.set(n.s+':'+n.f,{...n,solid:true,candidate:candidates.indexOf(selected)});}
 if(followsScore()){
   for(const n of dots.values()){n.scaleNote=true;n.ghost=!n.inShape;}
   const currentNotes=scoreNotes(scoreEvent(bar,beat)),currentKeys=new Set(currentNotes.map(n=>n.s+':'+n.f)),nextNotes=scoreNotes(nextScoreEvent(bar,beat));
@@ -741,7 +759,7 @@ if(followsScore()){
   $('boardTitle').textContent=scoreData().title+' · '+scoreSection(bar)[1];$('rangeInfo').textContent='작은 원: 펜타토닉 · 연한 원: 직전 · 점선 원: 다음 · 큰 원: 현재';
 }
 for(const n of [...dots.values()].sort((a,b)=>(a.trail?0:1)-(b.trail?0:1)||a.solid-b.solid)){const outsidePenta=tab==='penta'&&!n.inShape&&!n.guide&&!n.trail&&!n.preview,shapeTone=tab==='penta'&&n.inShape&&!n.guide&&!n.trail&&!n.preview,st=tab==='penta'?pentaStyle(n.iv):dotStyle(n.approach?2:n.iv),textRadius=Math.min(n.solid?24:19,fw(n.f)*.43),r=outsidePenta?5:Math.min(textRadius*.85,(y(1)-y(0))*.46)*(n.scaleNote ? .6 : n.preview ? .74 : n.trail ? .82 : 1),label=outsidePenta||n.preview?'':n.text?n.text:$('labels').value==='note'?spell(mod(OPEN[n.s]+n.f)):degree(n.iv),fs=Math.min(n.scaleNote?10:15,r*1.18),dFill=outsidePenta||n.preview?'transparent':n.trail?'var(--cream)':n.solid?st.fill:'var(--panel)',dStroke=outsidePenta?'#8a8a80':n.preview?'var(--cream)':n.trail?'var(--cream)':n.solid?st.stroke:'#969689',dSw=outsidePenta?1.4:n.preview?1.8:n.trail?1:n.solid?st.sw:1.6,dLabel=n.trail?'var(--ink)':n.solid?st.label:'var(--cream)';const action=n.candidate>=0?`data-voicing="${n.candidate}" role="button" tabindex="0" aria-label="${n.f}프렛 ${label}: 이 보이싱 위치를 기준으로 설정"`:'';svg+=`<g ${action} ${n.f===0?'data-open-string="'+(n.s+1)+'"':''} ${n.scaleNote?'data-scale-note="true"':''} ${n.guide?'class="score-guide-dot" data-score-index="'+n.guideIndex+'" data-score-note="'+n.s+':'+n.f+'"':''} ${n.trail?'data-previous-note="'+n.s+':'+n.f+'"':''} ${n.preview?'data-next-note="'+n.s+':'+n.f+'"':''} ${outsidePenta?'data-penta-other="true"':''} ${shapeTone?'data-penta-shape="true"':''}><circle cx="${x(n.f)}" cy="${y(n.s)}" r="${r}" fill="${dFill}" stroke="${dStroke}" stroke-width="${dSw}" ${n.preview?'stroke-dasharray="4 3"':''} opacity="${outsidePenta ? .62 : n.preview ? .72 : n.trail ? .2 : n.ghost ? .22 : shapeTone ? .62 : n.scaleNote ? .62 : n.solid ? 1 : .72}"/>${label?`<text x="${x(n.f)}" y="${y(n.s)}" text-anchor="middle" dy=".35em" font-size="${fs}" font-family="Pretendard KR, sans-serif" font-weight="600" fill="${dLabel}" pointer-events="none">${label}</text>`:''}</g>`;}
-$('board').innerHTML=svg;$('candidates').innerHTML=tab==='bebop'?`<span class="muted">${bebopText(c)}</span><span class="muted">다음 · ${bebopText(ahead[1])}</span>`:tab==='solo'||tab==='penta'?'':candidates.length?'<span class="muted">주변 후보</span>'+candidates.map((v,i)=>`<button class="candidate ${v===selected?'active':''}" data-candidate="${i}"><b>${['기본형','1전위','2전위','3전위'][v.inv]}</b><small>${v.label} · ${Math.min(...v.notes.map(n=>n.f))}–${Math.max(...v.notes.map(n=>n.f))}프렛</small></button>`).join('')+(emptyShapes.length?`<span class="muted">이 범위 밖 · ${emptyShapes.join(' · ')}</span>`:''):'<span class="muted">이 범위에 잡기 쉬운 모양이 없습니다. 주변 범위를 넓히거나 시작 위치를 옮겨주세요.</span>';$('hear').disabled=!selected;$('hear').hidden=tab==='solo'||tab==='penta'||tab==='bebop';}
+$('board').innerHTML=svg;$('candidates').innerHTML=tab==='bebop'?`<span class="muted">${bebopText(c,bebopNow)}</span><span class="muted">다음 · ${bebopText(ahead[1],bebopNext)}</span>`:tab==='solo'||tab==='penta'?'':candidates.length?'<span class="muted">주변 후보</span>'+candidates.map((v,i)=>`<button class="candidate ${v===selected?'active':''}" data-candidate="${i}"><b>${['기본형','1전위','2전위','3전위'][v.inv]}</b><small>${v.label} · ${Math.min(...v.notes.map(n=>n.f))}–${Math.max(...v.notes.map(n=>n.f))}프렛</small></button>`).join('')+(emptyShapes.length?`<span class="muted">이 범위 밖 · ${emptyShapes.join(' · ')}</span>`:''):'<span class="muted">이 범위에 잡기 쉬운 모양이 없습니다. 주변 범위를 넓히거나 시작 위치를 옮겨주세요.</span>';$('hear').disabled=!selected;$('hear').hidden=tab==='solo'||tab==='penta'||tab==='bebop';}
 function chooseBar(i,position=0){const resume=playing;if(followsScore())previousGuide=scoreNotes(scoreEvent(bar,beat));stop();previous=selected;bar=i;beat=position;refresh();if(resume)start(false);}
 function moveChord(direction){
   const bars=seq();let i=bar,slot=chordSlot(i,beat)+direction;
@@ -751,13 +769,13 @@ function moveChord(direction){
 }
 for(const i of [12,15,17,22])$('endFret').add(new Option(`${i}프렛`,i));$('endFret').value='17';
 fillKeys();
-function setTab(t){tab=t;$('degColor').checked=degreeColors[t];syncPentaLabels();$('scr-practice').setAttribute('data-mode',t);document.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('active',x.dataset.tab===t);x.setAttribute('aria-pressed',String(x.dataset.tab===t));});$('scaleControls').hidden=t!=='solo';$('scoreControls').hidden=t!=='penta'||!hasScore();$('shapeSet').hidden=t!=='voicing';$('triadSet').hidden=t!=='triad';$('pentaSet').hidden=t!=='penta';$('radiusControl').hidden=t==='penta'||t==='solo'||t==='bebop';$('bebopLevelSet').hidden=$('bebopRhythmSet').hidden=t!=='bebop';previous=null;previousGuide=[];selected=null;refresh();}
+function setTab(t){tab=t;$('degColor').checked=degreeColors[t];syncPentaLabels();$('scr-practice').setAttribute('data-mode',t);document.querySelectorAll('[data-tab]').forEach(x=>{x.classList.toggle('active',x.dataset.tab===t);x.setAttribute('aria-pressed',String(x.dataset.tab===t));});$('scaleControls').hidden=t!=='solo';$('scoreControls').hidden=t!=='penta'||!hasScore();$('shapeSet').hidden=t!=='voicing';$('triadSet').hidden=t!=='triad';$('pentaSet').hidden=t!=='penta';$('radiusControl').hidden=t==='penta'||t==='solo'||t==='bebop';$('bebopLevelSet').hidden=$('bebopRhythmSet').hidden=$('bebopAuto').hidden=t!=='bebop';previous=null;previousGuide=[];selected=null;refresh();}
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 function recalc(){radius=+$('radius').value;previous=null;selected=null;refresh();}
 $('radius').onchange=recalc;
 // 체크박스는 컨테이너에서 받는다 (change 는 올라온다). 전부 끄면 지판이 비므로 마지막 하나는 되돌린다.
 for(const id of ['shapeSet','triadSet'])$(id).addEventListener('change',e=>{if(!$(id).querySelector('input:checked')){e.target.checked=true;$('message').textContent='모양은 최소 하나를 켜두어야 합니다.';return;}recalc();});
-$('pentaType').onchange=()=>{syncPentaLabels();draw();};$('bebopLevel').onchange=$('bebopRhythm').onchange=draw;$('labels').onchange=draw;$('degColor').onchange=()=>{degreeColors[tab]=$('degColor').checked;draw();};
+$('pentaType').onchange=()=>{syncPentaLabels();draw();};$('bebopLevel').onchange=$('bebopRhythm').onchange=()=>{const resume=playing;if(resume)stop();bebopChoices.clear();draw();if(resume)start(false);};$('labels').onchange=draw;$('degColor').onchange=()=>{degreeColors[tab]=$('degColor').checked;draw();};
 function setFretboardLabels(id,mode){
   $(id).value=mode;
   document.querySelectorAll(`[data-label-target="${id}"]`).forEach(b=>{const on=b.dataset.labelMode===mode;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
@@ -766,7 +784,7 @@ function setFretboardLabels(id,mode){
 document.querySelectorAll('[data-label-mode]').forEach(b=>b.onclick=()=>setFretboardLabels(b.dataset.labelTarget,b.dataset.labelMode));
 $('endFret').onchange=()=>{anchor=Math.min(anchor,+$('endFret').value);previous=null;selected=null;refresh();};
 $('endFret').onchange();
-function resetProgression(){syncNotebook();drawLibrary();stop();bar=0;beat=-1;songDefaults();previous=null;previousGuide=[];selected=null;loopRange=null;$('clearLoop').hidden=true;refresh();if($('songList').children.length)drawSongs();}
+function resetProgression(){bebopChoices.clear();syncNotebook();drawLibrary();stop();bar=0;beat=-1;songDefaults();previous=null;previousGuide=[];selected=null;loopRange=null;$('clearLoop').hidden=true;refresh();if($('songList').children.length)drawSongs();}
 $('song').onchange=()=>{fillKeys();resetProgression();syncSongEditor();if(hasScore())setTab('penta');};$('key').onchange=()=>{if($('song').value==='draft'){ensureDraft();persistDraft();}resetProgression();syncSongEditor();};
 function reanchor(v){if(!v)return;anchor=Math.max(1,Math.min(+$('endFret').value,Math.round(v.mid)));previous=v;candidates=voicings(current());const same=candidates.find(x=>JSON.stringify(x.notes)===JSON.stringify(v.notes));if(!same)candidates=[v,...candidates].slice(0,4);selected=same||v;draw();$('message').textContent=`${anchor}프렛을 새 기준으로 설정했습니다. 다음 코드도 이 위치 주변에서 연결합니다.`;}
 $('candidates').onclick=e=>{const b=e.target.closest('[data-candidate]');if(b)reanchor(candidates[+b.dataset.candidate]);};
@@ -821,17 +839,18 @@ function scoreSound(i,b,t){
   scoreNotes(event).forEach(n=>note('piano',OPEN[n.s]+n.f+(event.technique==='harmonic'?12:0),t,.22/Math.sqrt(event.notes.length),duration*60/tempo()*.94));
 }
 let scoreFinished=false,resumeGuide=false,bebopFirst=false;
-// 코드가 시작되는 박에 다음 코드의 라인을 예약한다. 타겟 3도가 우선이라 코드 길이보다 긴 공식은 앞 음을 생략한다 (5음 공식은 연달아 쓸 수 없다).
+// 지판과 같은 길이·공식을 사용해 다음 코드 첫 박의 3도로 연결한다.
 function bebopSound(i,b,t){
   const starts=chordStarts(i),slot=starts.indexOf(b);if(tab!=='bebop'||slot<0)return;
-  const spb=60/tempo(),step=Number($('bebopRhythm').value),sw=$('style').value==='swing',end=(starts[slot+1]??4)-b,line=bebopLine(following(i,b)),play=(n,at,len)=>note('piano',n.midi,t+(Math.floor(at)+(at%1?(sw?2/3:.5):0))*spb,.3,len*spb*.9);
-  if(bebopFirst){bebopFirst=false;const first=bebopLine(seq()[i][slot]).at(-1);if(first)play(first,0,1);}
-  line.forEach((n,k)=>{const at=end-(line.length-1-k)*step;if(at>0)play(n,at,k===line.length-1?1:step);});
+  const context=bebopContext(i,b),spb=60/tempo(),step=Number($('bebopRhythm').value)||1,sw=$('style').value==='swing',end=(starts[slot+1]??4)-b,line=bebopLine(following(i,b),context.next.beats,context.next.id),play=(n,at,len)=>note('piano',n.midi,t+(at===end?at:Math.floor(at)+(at%1?(sw?2/3:.5):0))*spb,.3,len*spb*.9);
+  if(bebopFirst){bebopFirst=false;const first=bebopLine(seq()[i][slot],context.current.beats,context.current.id).at(-1);if(first)play(first,0,Math.min(step,end));}
+  line.forEach((n,k)=>{const at=end-(line.length-1-k)*step;if(at>0)play(n,at,step);});
 }
 function scheduler(){if(!playing)return;
   while(!scoreFinished&&nextTime<ac.currentTime+.12){
     if(countLeft>0){metroClick(nextTime);queue.push({t:nextTime,count:5-countLeft});countLeft--;nextTime+=60/tempo();continue;}
-    if(Number.isInteger(scheduleBeat)){metronome(scheduleBeat,nextTime);if(!$('metroOnly').checked&&!(hasScore()&&scheduleBar===116))sounds(chordAt(scheduleBar,scheduleBeat),scheduleBeat,nextTime);bebopSound(scheduleBar,scheduleBeat,nextTime);}
+    if(Number.isInteger(scheduleBeat)){metronome(scheduleBeat,nextTime);if(!$('metroOnly').checked&&!(hasScore()&&scheduleBar===116))sounds(chordAt(scheduleBar,scheduleBeat),scheduleBeat,nextTime);}
+    bebopSound(scheduleBar,scheduleBeat,nextTime);
     scoreSound(scheduleBar,scheduleBeat,nextTime);resumeGuide=false;
     queue.push({t:nextTime,bar:scheduleBar,beat:scheduleBeat});
     const step=hasScore()?.25:1;nextTime+=step*60/tempo();scheduleBeat+=step;
@@ -845,7 +864,7 @@ function scheduler(){if(!playing)return;
 }
 
 function paintBeat(b){document.querySelectorAll('.beat').forEach((e,i)=>e.classList.toggle('on',i===b));}
-async function start(withCount=true){try{audio();await ac.resume();if(playing)return;playing=true;scoreFinished=false;resumeGuide=true;bebopFirst=true;scheduleBar=bar;scheduleBeat=hasScore()?Math.max(0,beat):chordStarts(bar)[chordSlot(bar,beat)];countLeft=withCount&&$('countin').value==='1'?4:0;nextTime=ac.currentTime+.08;queue=[];$('play').textContent='Ⅱ 정지';clock=setInterval(scheduler,25);scheduler();}catch(e){$('message').textContent='오디오를 시작하지 못했습니다. Chrome 또는 Edge에서 파일을 열고 다시 눌러주세요.';}}
+async function start(withCount=true){try{audio();await ac.resume();if(playing)return;if(withCount){bebopChoices.clear();if(tab==='bebop')draw();}playing=true;scoreFinished=false;resumeGuide=true;bebopFirst=true;scheduleBar=bar;scheduleBeat=hasScore()?Math.max(0,beat):chordStarts(bar)[chordSlot(bar,beat)];countLeft=withCount&&$('countin').value==='1'?4:0;nextTime=ac.currentTime+.08;queue=[];$('play').textContent='Ⅱ 정지';clock=setInterval(scheduler,25);scheduler();}catch(e){$('message').textContent='오디오를 시작하지 못했습니다. Chrome 또는 Edge에서 파일을 열고 다시 눌러주세요.';}}
 function stop(){playing=false;clearInterval(clock);queue=[];if(ac&&bus){let old=bus;old.gain.setTargetAtTime(.0001,ac.currentTime,.015);setTimeout(()=>old.disconnect(),100);newBus();}$('play').textContent='▶ 재생';$('playStatus').textContent='정지';paintBeat(-1);}
 $('play').onclick=()=>playing?stop():start();$('hear').onclick=async()=>{if(!selected)return;audio();await ac.resume();selected.notes.forEach((n,i)=>note('piano',n.midi,ac.currentTime+.03+i*.025,.24,.9));};$('master').oninput=()=>{if(master)master.gain.setTargetAtTime(+$('master').value/100,ac.currentTime,.02);};$('bpm').onchange=()=>{$('bpm').value=Math.max(40,Math.min(240,Number($('bpm').value)||100));syncTimeline();};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('drawer').hidden)drawer(false);if((['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)||e.target.isContentEditable||$('barEditor').open||$('scoreEditor').open||$('durationEditor').open))return;if(view!=='practice')return;if(e.code==='Space'&&e.target.tagName!=='BUTTON'){e.preventDefault();$('play').click();}if(e.key==='ArrowRight'){e.preventDefault();$('nextBar').click();}if(e.key==='ArrowLeft'){e.preventDefault();$('prev').click();}});

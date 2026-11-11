@@ -441,8 +441,92 @@ console.log('통과 — 두 지판 음 이름/도수 전환 · 메이저 3·7 ·
 vm.runInContext(`document.getElementById('song').value='blues';fillKeys();anchor=7;document.getElementById('endFret').value='17';document.getElementById('bebopRhythm').value='1';`,ctx);
 const line = (lvl, chord) => vm.runInContext(`document.getElementById('bebopLevel').value='${lvl}';bebopLine(parse('${chord}')).map(n=>(n.s+1)+':'+n.f).join(' ')`, ctx);
 assert.equal(line('4','F7'), '2:11 2:8 2:9 2:10', 'F7 4음: 4·2·♯2·3, 2번줄 10프렛 A가 타겟');
+reg.bebopRhythm.value='0.5';
 assert.equal(line('5','Gm7'), '3:2 3:5 3:4 3:2 3:3', 'Gm7 5음: 2·4·3·2·♭3, 3번줄 3프렛 B♭가 타겟');
+reg.bebopRhythm.value='1';
 assert.equal(line('1','Cmaj7'), '3:9', 'Cmaj7 바로 3도');
 vm.runInContext(`document.getElementById('bebopLevel').value='4';tab='bebop';draw();`, ctx);
 assert.ok(reg.candidates.innerHTML.includes('박 전부터'));
 console.log('통과 — 비밥 3도 타겟팅 공식');
+
+// Automatic fitting uses both sides of a change; the current target keeps its first beat.
+function fittedLine(mode,beats,rhythm,chord='F7',id='test'){
+  reg.bebopLevel.value=mode;reg.bebopRhythm.value=String(rhythm);
+  return JSON.parse(vm.runInContext(`JSON.stringify(bebopLine(parse(${JSON.stringify(chord)}),${beats},${JSON.stringify(id)}))`,ctx));
+}
+assert.equal(fittedLine('auto',4,1).length,4);
+assert.equal(fittedLine('auto',2,1).length,2);
+assert.ok(html.includes('<option value="auto" selected>'));
+assert.equal(fittedLine('4',2,1).length,2,'수동 4음도 2박에서는 2음으로 맞춘다');
+assert.equal(fittedLine('5',4,1).length,4,'4분음표 5음은 4박을 넘기지 않는다');
+assert.equal(fittedLine('auto',1,1).length,1);
+assert.equal(fittedLine('auto',2,.5).length,4);
+assert.equal(fittedLine('5',2,.5).length,4);
+assert.equal(fittedLine('auto',1,.5).length,2);
+assert.equal(fittedLine('5',4,.5).length,5);
+p.setSong('blues');
+const contextAt=(i,b)=>JSON.parse(vm.runInContext(`JSON.stringify(bebopContext(${i},${b}))`,ctx));
+assert.deepEqual(contextAt(3,0),{current:{beats:2,id:'3:0'},next:{beats:2,id:'3:1'}});
+assert.deepEqual(contextAt(3,2),{current:{beats:2,id:'3:1'},next:{beats:2,id:'4:0'}});
+vm.runInContext('loopRange=[3,3]',ctx);
+assert.equal(contextAt(3,2).next.id,'3:0','반복 마지막 코드의 다음은 반복 첫 코드다');
+assert.equal(contextAt(3,0).current.beats,2);
+vm.runInContext('loopRange=null;SONGS.custom=["C7 D7 E7 F7"];',ctx);
+p.setSong('custom');
+assert.equal(contextAt(0,0).current.beats,1);
+assert.equal(contextAt(0,3).next.id,'0:0');
+
+// Every random candidate fits and still ends on the target third.
+for(const chord of ['F7','Gm7','Bm7b5'])for(const rhythm of [1,.5])for(const beats of [1,2,4])for(const mode of ['auto','random','1','2b','2a','3','4','5']){
+  const notes=fittedLine(mode,beats,rhythm,chord,`${chord}-${rhythm}-${beats}`);
+  assert.ok(notes.length<=Math.ceil(beats/rhythm));
+  assert.equal(notes.at(-1).iv,chord==='F7'?4:3);
+  assert.deepEqual(notes.map(n=>n.order),notes.map((_,i)=>i+1));
+}
+reg.bebopLevel.value='random';reg.bebopRhythm.value='1';
+const randomCases=vm.runInContext(`(()=>{
+  const original=Math.random,out=[];
+  try{for(const value of [0,.4,.999]){Math.random=()=>value;bebopChoices.clear();out.push(bebopLine(parse('F7'),2,'random-case').map(n=>n.iv));}}
+  finally{Math.random=original;bebopChoices.clear();}return JSON.stringify(out);
+})()`,ctx);
+assert.deepEqual(JSON.parse(randomCases),[[4],[3,4],[5,4]],'2박 랜덤은 바로 3도·아래/위 어프로치만 사용한다');
+reg.bebopLevel.value='random';reg.bebopRhythm.value='1';
+p.setSong('blues');
+vm.runInContext('bar=3;beat=0;tab="bebop";bebopChoices.clear();draw()',ctx);
+const stableBoard=reg.board.innerHTML,stableCaption=reg.candidates.innerHTML;
+vm.runInContext('draw()',ctx);
+assert.equal(reg.board.innerHTML,stableBoard,'화면을 다시 그려도 랜덤 운지를 유지한다');
+assert.equal(reg.candidates.innerHTML,stableCaption);
+assert.match(reg.bebopAuto.textContent,/랜덤.*현재 [12]음.*다음 [12]음/);
+
+// The audio scheduler uses exactly the notes shown in the next-chord preview.
+reg.bpm.value='120';reg.style.value='straight';
+vm.runInContext(`globalThis.bebopPlayed=[];note=(kind,midi,t,volume,duration)=>bebopPlayed.push({midi,t,duration});bebopFirst=false;bebopSound(3,0,10);`,ctx);
+const played=JSON.parse(vm.runInContext('JSON.stringify(bebopPlayed)',ctx));
+const nextContext=contextAt(3,0).next;
+const preview=fittedLine('random',nextContext.beats,1,'F7',nextContext.id);
+assert.deepEqual(played.map(n=>n.midi),preview.map(n=>n.midi));
+assert.equal(played.at(-1).t,11,'다음 코드의 3도는 2박 뒤 첫 박에 도착한다');
+assert.ok(played.every(n=>n.t>10&&n.t<=11));
+
+reg.bebopLevel.value='4';reg.bebopRhythm.value='0.5';
+vm.runInContext('bebopPlayed=[];bebopSound(3,0,10)',ctx);
+assert.deepEqual(JSON.parse(vm.runInContext('JSON.stringify(bebopPlayed.map(n=>n.t))',ctx)),[10.25,10.5,10.75,11]);
+assert.ok(JSON.parse(vm.runInContext('JSON.stringify(bebopPlayed)',ctx)).every(n=>Math.abs(n.duration-.225)<1e-9),'8분음표 타겟도 다음 어프로치 전에 끝난다');
+reg.bebopRhythm.value='1';
+vm.runInContext('bebopPlayed=[];bebopFirst=true;bebopSound(3,0,10)',ctx);
+assert.deepEqual(JSON.parse(vm.runInContext('JSON.stringify(bebopPlayed.map(n=>n.t))',ctx)),[10,10.5,11],'첫 타겟과 다음 타겟의 어프로치가 같은 박에 겹치지 않는다');
+
+// Half-beat chord changes in score presets also trigger a target, even in swing.
+p.setSong('silhouette');reg.style.value='swing';
+assert.equal(contextAt(56,2.5).next.beats,.5);
+vm.runInContext(`bar=56;beat=2.5;bebopPlayed=[];bebopFirst=false;ac={currentTime:0};playing=true;scoreFinished=false;countLeft=0;queue=[];scheduleBar=56;scheduleBeat=2.5;nextTime=0;scheduler();playing=false;`,ctx);
+assert.equal(JSON.parse(vm.runInContext('JSON.stringify(bebopPlayed)',ctx)).at(-1).t,.25,'반 박 코드의 타겟도 실제 코드 첫 박에 맞춘다');
+
+// A fresh play clears the random plan; redraws and in-play navigation do not.
+p.setSong('blues');reg.bebopLevel.value='random';reg.style.value='straight';
+vm.runInContext('ac={currentTime:0,resume:async()=>{}};bus=null;bar=3;beat=0;bebopChoices.set("stale-plan","4");',ctx);
+await vm.runInContext('start()',ctx);
+assert.equal(vm.runInContext('bebopChoices.has("stale-plan")',ctx),false);
+vm.runInContext('stop()',ctx);
+console.log('통과 — 비밥 자동 길이 조절 · 랜덤 후보/고정 · 지판/반주 일치 · 2/4코드 · 반복 · 8분음표 · 반 박 타겟');
